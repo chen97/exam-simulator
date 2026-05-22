@@ -1,5 +1,22 @@
-/* global React, ReactDOM, Icon */
-const { useState, useEffect, useMemo, useRef, useCallback } = React;
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Icon } from './icons.jsx';
+import {
+  validatePack,
+  loadCustomPacks,
+  saveCustomPacks,
+  readFileAsText,
+  EXAMPLE_JSON,
+  AI_PROMPT,
+} from './pack-loader.js';
+import {
+  useTweaks,
+  TweaksPanel,
+  TweakSection,
+  TweakRadio,
+  TweakSelect,
+  TweakToggle,
+  TweakSlider,
+} from './tweaks-panel.jsx';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tweakable defaults (host can persist edits to these via __edit_mode_set_keys)
@@ -136,18 +153,18 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
   };
 
   const copyExample = () => {
-    navigator.clipboard?.writeText(window.PackLoader.EXAMPLE_JSON);
+    navigator.clipboard?.writeText(EXAMPLE_JSON);
   };
 
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const copyPrompt = () => {
-    navigator.clipboard?.writeText(window.PackLoader.AI_PROMPT);
+    navigator.clipboard?.writeText(AI_PROMPT);
     setCopiedPrompt(true);
     setTimeout(() => setCopiedPrompt(false), 1800);
   };
 
   const downloadExample = () => {
-    const blob = new Blob([window.PackLoader.EXAMPLE_JSON], { type: "application/json" });
+    const blob = new Blob([EXAMPLE_JSON], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = "example-exam.json";
@@ -266,7 +283,7 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
                   {copiedPrompt ? <><Icon.check /> Copied</> : <>Copy AI prompt</>}
                 </button>
               </div>
-              <pre className="ai-prompt-preview mono">{window.PackLoader.AI_PROMPT}</pre>
+              <pre className="ai-prompt-preview mono">{AI_PROMPT}</pre>
             </div>
 
             <div className="docs-section-title">Top-level fields</div>
@@ -303,7 +320,7 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
                 <button className="ghost-btn small" onClick={downloadExample}>Download example.json</button>
               </div>
             </div>
-            <pre className="docs-code mono">{window.PackLoader.EXAMPLE_JSON}</pre>
+            <pre className="docs-code mono">{EXAMPLE_JSON}</pre>
 
             <div className="docs-section-title">Tips</div>
             <ul className="docs-tips">
@@ -596,7 +613,7 @@ function ResultsScreen({ pack, examQuestions, responses, flagged, elapsedMs, onR
 // ─────────────────────────────────────────────────────────────────────────────
 function App() {
   // Tweaks-backed settings (also drive theme/density CSS vars)
-  const [tweaks, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
 
   // Apply CSS-affecting tweaks to <html>
   useEffect(() => {
@@ -606,7 +623,7 @@ function App() {
   }, [tweaks.theme, tweaks.density, tweaks.accent]);
 
   // Build pack registry: built-in packs from window.ExamPacks + uploaded customs
-  const [customPacks, setCustomPacks] = useState(() => window.PackLoader.loadCustomPacks());
+  const [customPacks, setCustomPacks] = useState(() => loadCustomPacks());
   const packs = useMemo(
     () => [...Object.values(window.ExamPacks || {}), ...customPacks],
     [customPacks]
@@ -619,21 +636,21 @@ function App() {
     setUploadError(null);
     setUploadWarnings(null);
     try {
-      const text = await window.PackLoader.readFileAsText(file);
+      const text = await readFileAsText(file);
       let parsed;
       try { parsed = JSON.parse(text); }
       catch (e) {
         setUploadError([`${file.name}: invalid JSON — ${e.message}`]);
         return;
       }
-      const { pack, errors, warnings } = window.PackLoader.validatePack(parsed);
+      const { pack, errors, warnings } = validatePack(parsed);
       if (errors.length) {
         setUploadError([`${file.name}:`, ...errors]);
         return;
       }
       setCustomPacks((list) => {
         const next = [...list, pack];
-        window.PackLoader.saveCustomPacks(next);
+        saveCustomPacks(next);
         return next;
       });
       if (warnings.length) setUploadWarnings(warnings);
@@ -645,7 +662,7 @@ function App() {
   const handleDeleteCustom = (slug) => {
     setCustomPacks((list) => {
       const next = list.filter((p) => p.slug !== slug);
-      window.PackLoader.saveCustomPacks(next);
+      saveCustomPacks(next);
       return next;
     });
   };
@@ -930,10 +947,6 @@ function App() {
 // Tweaks panel
 // ─────────────────────────────────────────────────────────────────────────────
 function AppTweaks({ tweaks, setTweak }) {
-  const {
-    TweaksPanel, TweakSection, TweakRadio, TweakSelect, TweakToggle, TweakSlider,
-  } = window;
-
   return (
     <TweaksPanel>
       <TweakSection label="Appearance">
@@ -991,6 +1004,4 @@ function AppTweaks({ tweaks, setTweak }) {
   );
 }
 
-// Mount
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App />);
+export default App;

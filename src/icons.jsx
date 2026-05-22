@@ -1,5 +1,5 @@
 // Small icon set as inline SVGs — used across the app.
-const Icon = {
+export const Icon = {
   sun: (p) => (
     <svg className="i" {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="4"></circle>
@@ -76,5 +76,3 @@ const Icon = {
     </svg>
   ),
 };
-
-window.Icon = Icon;
