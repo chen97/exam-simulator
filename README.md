@@ -2,6 +2,8 @@
 
 A clean, mobile-friendly multiple-choice exam simulator that runs entirely in the browser. Built with React + vanilla CSS, no build step required.
 
+**Live demo:** https://chen97.github.io/exam-simulator/
+
 ## Features
 
 - **Multiple exam packs** — Upload any number of `.json` question sets. Uploaded packs persist in browser localStorage.
