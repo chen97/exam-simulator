@@ -1,6 +1,8 @@
 # Exam Simulator
 
-A clean, mobile-friendly multiple-choice exam simulator that runs entirely in the browser. Built with React + vanilla CSS, no build step required.
+A clean, mobile-friendly multiple-choice exam simulator that runs entirely in the browser. Built with React + Vite + vanilla CSS.
+
+**Live demo:** https://chen97.github.io/exam-simulator/
 
 ## Features
 
