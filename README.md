@@ -17,7 +17,14 @@ A clean, mobile-friendly multiple-choice exam simulator that runs entirely in th
 
 ## Getting started
 
-Open `exam-simulator/index.html` in any modern browser. No build, no install. To deploy to GitHub Pages, push to a repo and enable Pages on the `main` branch — the app is fully static.
+```bash
+npm install
+npm run dev        # local dev server with HMR at http://localhost:5173
+npm run build      # production build → dist/
+npm run preview    # serve the built dist/ locally
+```
+
+To deploy to GitHub Pages (or any static host), run `npm run build` and publish the contents of `dist/`. The `base: './'` in `vite.config.js` keeps asset paths relative so it works from any subpath.
 
 ## JSON pack format
 
@@ -84,12 +91,16 @@ Open the app → "Show JSON format guide" → click "Copy AI prompt". Paste into
 ## File layout
 
 ```
-exam-simulator/
-├── index.html           # entry point — fonts, styles, script tags
-├── app.jsx              # main React app: state machine + screens
-├── icons.jsx            # inline SVG icon set
-├── pack-loader.jsx      # JSON validation + localStorage persistence + AI prompt
-└── tweaks-panel.jsx     # tweaks panel component
+.
+├── index.html           # Vite entry — fonts + #root + module script
+├── vite.config.js       # Vite + @vitejs/plugin-react
+└── src/
+    ├── main.jsx         # mounts <App /> into #root
+    ├── App.jsx          # main React app: state machine + screens
+    ├── icons.jsx        # inline SVG icon set
+    ├── pack-loader.js   # JSON validation + localStorage persistence + AI prompt
+    ├── tweaks-panel.jsx # tweaks panel component
+    └── styles.css       # all app styles
 ```
 
 ## License

@@ -1,7 +1,5 @@
-/* global React */
 // ─────────────────────────────────────────────────────────────────────────────
-// Exam pack loader — validates user-uploaded JSON, persists to localStorage,
-// merges with built-in packs registered to window.ExamPacks.
+// Exam pack loader — validates user-uploaded JSON, persists to localStorage.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "examSim:customPacks";
@@ -245,7 +243,7 @@ REQUIREMENTS:
 
 Return the JSON object now.`;
 
-window.PackLoader = {
+export {
   validatePack,
   loadCustomPacks,
   saveCustomPacks,
