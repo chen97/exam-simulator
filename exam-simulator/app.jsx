@@ -1,0 +1,996 @@
+/* global React, ReactDOM, Icon */
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tweakable defaults (host can persist edits to these via __edit_mode_set_keys)
+// ─────────────────────────────────────────────────────────────────────────────
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "light",
+  "explanationMode": true,
+  "density": "comfortable",
+  "accent": "blue",
+  "showTimer": true,
+  "minutesPerQuestion": 3
+}/*EDITMODE-END*/;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Utilities
+// ─────────────────────────────────────────────────────────────────────────────
+const formatTime = (ms) => {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+};
+
+// Estimated time remaining: minutes-per-question × unanswered count.
+const formatRemaining = (mins) => {
+  if (mins <= 0) return "0m";
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m`;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Topbar
+// ─────────────────────────────────────────────────────────────────────────────
+function Topbar({
+  mode, pack, theme, onToggleTheme,
+  explanationMode, onToggleExplanation,
+  onOpenPalette, currentIndex, total,
+  showTimer, remainingMins, onRestart,
+}) {
+  return (
+    <header className="topbar">
+      <div className="topbar-brand">
+        <div className="brand-mark">eX</div>
+        <span className="topbar-brand-text">Exam Simulator</span>
+      </div>
+
+      {mode !== "start" && pack && (
+        <div className="topbar-meta">
+          <span className="dot"></span>
+          <span className="mono">{pack.code}</span>
+          {mode === "exam" && (
+            <>
+              <span className="dot"></span>
+              <span className="mono">{currentIndex + 1} / {total}</span>
+            </>
+          )}
+        </div>
+      )}
+
+      <div className="topbar-spacer"></div>
+
+      {mode === "exam" && showTimer && (
+        <span className="timer-pill" title="Estimated time to finish all remaining questions" aria-label="Estimated remaining time">
+          <span className="timer-pill-label">~ </span>{formatRemaining(remainingMins)}<span className="timer-pill-label"> left</span>
+        </span>
+      )}
+
+      <div className="toggle-row">
+        <label className="toggle-row-label" htmlFor="ex-mode" title="Show per-choice rationale and explanations">Explanations</label>
+        <div
+          id="ex-mode"
+          role="switch"
+          aria-checked={explanationMode}
+          aria-label="Explanations"
+          tabIndex={0}
+          className={"switch " + (explanationMode ? "on" : "")}
+          onClick={onToggleExplanation}
+          onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); onToggleExplanation(); } }}
+        />
+      </div>
+
+      {mode === "exam" && (
+        <button className="icon-btn square" onClick={onOpenPalette} title="Question palette (P)" aria-label="Open question palette">
+          <Icon.list />
+        </button>
+      )}
+
+      <button className="icon-btn square" onClick={onToggleTheme} title="Toggle theme (D)" aria-label="Toggle dark mode">
+        {theme === "dark" ? <Icon.sun /> : <Icon.moon />}
+      </button>
+
+      {mode !== "start" && (
+        <button className="icon-btn" onClick={onRestart} title="Restart">
+          <Icon.restart /> <span className="topbar-btn-text" style={{fontSize: 13}}>Restart</span>
+        </button>
+      )}
+    </header>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Start screen
+// ─────────────────────────────────────────────────────────────────────────────
+function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, uploadWarnings, onDismissUpload }) {
+  const [selectedSlug, setSelectedSlug] = useState(packs[0]?.slug || null);
+  const selected = packs.find((p) => p.slug === selectedSlug);
+  const [questionOrder, setQuestionOrder] = useState("sequence");
+  const [answerOrder, setAnswerOrder] = useState("sequence");
+  const [showDocs, setShowDocs] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Auto-select newest pack after upload
+  useEffect(() => {
+    if (packs.length && !packs.find((p) => p.slug === selectedSlug)) {
+      setSelectedSlug(packs[packs.length - 1].slug);
+    }
+  }, [packs.length]); // eslint-disable-line
+
+  const handleFiles = async (files) => {
+    if (!files || files.length === 0) return;
+    for (const f of files) {
+      await onUpload(f);
+    }
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    handleFiles(e.dataTransfer.files);
+  };
+
+  const copyExample = () => {
+    navigator.clipboard?.writeText(window.PackLoader.EXAMPLE_JSON);
+  };
+
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const copyPrompt = () => {
+    navigator.clipboard?.writeText(window.PackLoader.AI_PROMPT);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 1800);
+  };
+
+  const downloadExample = () => {
+    const blob = new Blob([window.PackLoader.EXAMPLE_JSON], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "example-exam.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="start-wrap">
+      <div className="start-card">
+        <div className="start-eyebrow">{packs.length ? "Select an exam pack" : "Get started"}</div>
+        <h1 className="start-title">{packs.length ? "Practice with focus." : "Upload an exam pack."}</h1>
+        <p className="start-sub">
+          {packs.length
+            ? <>Choose a pack to begin — or upload a new <span className="mono" style={{fontSize:"0.9em"}}>.json</span> question set below.</>
+            : <>Drop a <span className="mono" style={{fontSize:"0.9em"}}>.json</span> file containing your questions and answers to begin. See the format guide below for the schema.</>}
+        </p>
+
+        {packs.length > 0 && (
+          <div className="pack-list">
+            {packs.map((p) => (
+              <div
+                key={p.slug}
+                className={"pack-card" + (p.slug === selectedSlug ? " selected" : "")}
+                onClick={() => setSelectedSlug(p.slug)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedSlug(p.slug); }}}
+              >
+                <span className="pack-code">{p.code}</span>
+                <div className="pack-info">
+                  <div className="pack-title">{p.title}</div>
+                  <div className="pack-meta">{p.vendor} · {p.questions.length} questions · {p.domains.length} domains</div>
+                </div>
+                <button
+                  className="pack-delete"
+                  onClick={(e) => { e.stopPropagation(); onDeleteCustom(p.slug); }}
+                  title="Remove exam pack"
+                  aria-label="Remove exam pack"
+                >
+                  <Icon.close />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Upload dropzone */}
+        <div
+          className={"dropzone" + (dragOver ? " is-over" : "")}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={onDrop}
+          onClick={() => fileInputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            multiple
+            style={{ display: "none" }}
+            onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
+          />
+          <Icon.upload />
+          <div>
+            <div className="dropzone-title">Upload exam pack</div>
+            <div className="dropzone-sub">Drop a <span className="mono">.json</span> file here or click to browse · stored locally in your browser</div>
+          </div>
+        </div>
+
+        {(uploadError || (uploadWarnings && uploadWarnings.length > 0)) && (
+          <div className={"upload-feedback " + (uploadError ? "error" : "warn")}>
+            <div className="upload-feedback-head">
+              {uploadError ? "Upload failed" : "Uploaded with warnings"}
+              <button className="upload-feedback-close" onClick={onDismissUpload} aria-label="Dismiss"><Icon.close /></button>
+            </div>
+            {uploadError && (
+              <ul>
+                {uploadError.slice(0, 8).map((e, i) => <li key={i}>{e}</li>)}
+                {uploadError.length > 8 && <li>…and {uploadError.length - 8} more</li>}
+              </ul>
+            )}
+            {!uploadError && uploadWarnings && (
+              <ul>
+                {uploadWarnings.slice(0, 5).map((w, i) => <li key={i}>{w}</li>)}
+                {uploadWarnings.length > 5 && <li>…and {uploadWarnings.length - 5} more</li>}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {/* Format guide */}
+        <button className="docs-toggle" onClick={() => setShowDocs((v) => !v)}>
+          <Icon.book />
+          <span>{showDocs ? "Hide" : "Show"} JSON format guide</span>
+          <span className={"docs-caret" + (showDocs ? " open" : "")}>▾</span>
+        </button>
+
+        {showDocs && (
+          <div className="docs-panel">
+            <p className="docs-lede">
+              An exam pack is a single JSON object with a <span className="mono">questions</span> array.
+              Required fields are <strong>bold</strong>; everything else has sensible defaults.
+            </p>
+
+            {/* AI prompt — copy & paste into ChatGPT / Claude / Gemini */}
+            <div className="ai-prompt-card">
+              <div className="ai-prompt-head">
+                <div>
+                  <div className="ai-prompt-title">✨ Generate questions with AI</div>
+                  <div className="ai-prompt-sub">Copy this prompt, paste it into ChatGPT / Claude / Gemini, fill in the angle-bracket placeholders, and save the response as a <span className="mono">.json</span> file to upload here.</div>
+                </div>
+                <button className={"primary-btn small" + (copiedPrompt ? " copied" : "")} onClick={copyPrompt}>
+                  {copiedPrompt ? <><Icon.check /> Copied</> : <>Copy AI prompt</>}
+                </button>
+              </div>
+              <pre className="ai-prompt-preview mono">{window.PackLoader.AI_PROMPT}</pre>
+            </div>
+
+            <div className="docs-section-title">Top-level fields</div>
+            <table className="docs-table">
+              <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td className="mono"><strong>title</strong></td><td>string</td><td>Display name of the exam.</td></tr>
+                <tr><td className="mono">code</td><td>string</td><td>Short code (e.g. <span className="mono">SAA-C03</span>). Defaults to first 3 words of title.</td></tr>
+                <tr><td className="mono">vendor</td><td>string</td><td>Issuing organization. Defaults to "Custom".</td></tr>
+                <tr><td className="mono">domains</td><td>string[]</td><td>List of subject areas. Auto-collected from questions if omitted.</td></tr>
+                <tr><td className="mono"><strong>questions</strong></td><td>object[]</td><td>At least one question required.</td></tr>
+              </tbody>
+            </table>
+
+            <div className="docs-section-title">Question fields</div>
+            <table className="docs-table">
+              <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td className="mono">id</td><td>string</td><td>Unique within the pack. Auto-generated if omitted.</td></tr>
+                <tr><td className="mono"><strong>stem</strong></td><td>string</td><td>The question text.</td></tr>
+                <tr><td className="mono"><strong>options</strong></td><td>array</td><td>2+ entries. Each is <span className="mono">{`{ key, text }`}</span> — or just a string (keys auto-assigned A/B/C/D).</td></tr>
+                <tr><td className="mono"><strong>answer</strong></td><td>string</td><td>The <span className="mono">key</span> of the correct option (e.g. <span className="mono">"C"</span>).</td></tr>
+                <tr><td className="mono">rationale</td><td>object</td><td>Map of option key → explanation, e.g. <span className="mono">{`{ "A": "...", "B": "..." }`}</span>. Shown when Explanations mode is on.</td></tr>
+                <tr><td className="mono">explanation</td><td>string</td><td>Summary paragraph shown below the options.</td></tr>
+                <tr><td className="mono">domain</td><td>string</td><td>Topic group. Defaults to "General".</td></tr>
+                <tr><td className="mono">difficulty</td><td>string</td><td>One of <span className="mono">Easy</span>, <span className="mono">Medium</span>, <span className="mono">Hard</span>. Defaults to "Medium".</td></tr>
+              </tbody>
+            </table>
+
+            <div className="docs-section-title docs-section-title-row">
+              <span>Example</span>
+              <div className="docs-actions">
+                <button className="ghost-btn small" onClick={copyExample}>Copy</button>
+                <button className="ghost-btn small" onClick={downloadExample}>Download example.json</button>
+              </div>
+            </div>
+            <pre className="docs-code mono">{window.PackLoader.EXAMPLE_JSON}</pre>
+
+            <div className="docs-section-title">Tips</div>
+            <ul className="docs-tips">
+              <li>You can have any number of options per question — 2, 3, 4, 5+. The <span className="mono">answer</span> just has to match one option's <span className="mono">key</span>.</li>
+              <li>Provide <span className="mono">rationale</span> for <em>every</em> option, not just the correct one — wrong-answer rationale is where most learning happens.</li>
+              <li>Uploaded packs are stored in your browser's localStorage. They persist across refreshes but are private to this browser.</li>
+              <li>Need to share with someone? Send them the .json file — they can drop it in here.</li>
+            </ul>
+          </div>
+        )}
+
+        <div className="start-config">
+          <div className="config-field">
+            <label className="config-label" htmlFor="cfg-qorder">Question order</label>
+            <select id="cfg-qorder" className="config-select" value={questionOrder} onChange={(e) => setQuestionOrder(e.target.value)}>
+              <option value="sequence">Sequence</option>
+              <option value="shuffle">Shuffle</option>
+            </select>
+          </div>
+          <div className="config-field">
+            <label className="config-label" htmlFor="cfg-aorder">Answer order</label>
+            <select id="cfg-aorder" className="config-select" value={answerOrder} onChange={(e) => setAnswerOrder(e.target.value)}>
+              <option value="sequence">Sequence</option>
+              <option value="shuffle">Shuffle</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="start-actions">
+          <button className="primary-btn" disabled={!selected} onClick={() => onStart(selected, questionOrder === "shuffle", answerOrder === "shuffle")}>
+            Begin exam{selected && <> &nbsp;<span className="start-count mono">· {selected.questions.length} questions</span></>} &nbsp;→
+          </button>
+          {selected && <span className="nav-hint" style={{marginLeft: 12}}>Tip: <span className="mono">1–4</span> answer · <span className="mono">←/→</span> nav</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Option card
+// ─────────────────────────────────────────────────────────────────────────────
+function OptionCard({ option, isSelected, isCorrect, locked, showRationale, rationaleText, onClick }) {
+  const showCorrect = locked && option.key === option._correctKey;
+  const showIncorrect = locked && isSelected && !showCorrect;
+  const isDim = locked && !showCorrect && !showIncorrect;
+
+  let cls = "option-card";
+  if (showCorrect) cls += " is-correct";
+  else if (showIncorrect) cls += " is-incorrect";
+  else if (isDim) cls += " is-dim";
+
+  return (
+    <button
+      className={cls}
+      disabled={locked}
+      onClick={onClick}
+    >
+      <div className="option-row">
+        <span className="opt-key mono">{option.key}</span>
+        <span className="opt-text">{option.text}</span>
+        {showCorrect && <span className="opt-status-icon" style={{color: "var(--good)"}}><Icon.check /></span>}
+        {showIncorrect && <span className="opt-status-icon" style={{color: "var(--bad)"}}><Icon.x /></span>}
+      </div>
+      {showRationale && rationaleText && (
+        <div className="opt-rationale">{rationaleText}</div>
+      )}
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Question card
+// ─────────────────────────────────────────────────────────────────────────────
+function QuestionCard({
+  question, index, total,
+  response, flagged, onSelect, onToggleFlag,
+  explanationMode,
+}) {
+  const locked = !!response;
+  const diffClass = "diff-" + (question.difficulty || "medium").toLowerCase();
+
+  return (
+    <article className="question-card" data-screen-label={`Question ${index + 1}`}>
+      <div className="q-head">
+        <span className="q-num mono">Q{String(index + 1).padStart(2, "0")}</span>
+        <span className="q-tag mono">{question.domain}</span>
+        <span className={"q-tag mono " + diffClass}>{question.difficulty}</span>
+        <button
+          className={"q-flag" + (flagged ? " flagged" : "")}
+          onClick={onToggleFlag}
+          title={flagged ? "Unflag question" : "Flag for review"}
+          aria-pressed={flagged}
+        >
+          <Icon.flag />
+        </button>
+      </div>
+
+      <h2 className="q-stem">{question.stem}</h2>
+
+      <div className="options">
+        {question.options.map((opt) => (
+          <OptionCard
+            key={opt.key}
+            option={{ ...opt, _correctKey: question.answer }}
+            isSelected={response?.selected === opt.key}
+            isCorrect={opt.key === question.answer}
+            locked={locked}
+            showRationale={locked && explanationMode}
+            rationaleText={question.rationale?.[opt.key]}
+            onClick={() => onSelect(opt.key)}
+          />
+        ))}
+      </div>
+
+      {locked && explanationMode && question.explanation && (
+        <div className="explanation-card">
+          <span className="rationale-label">
+            <Icon.book style={{width: 12, height: 12, marginRight: 6, verticalAlign: "-2px"}} />
+            Explanation
+          </span>
+          <p>{question.explanation}</p>
+        </div>
+      )}
+    </article>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Palette drawer
+// ─────────────────────────────────────────────────────────────────────────────
+function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, currentIndex, onJump, domains }) {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all"); // all | unanswered | flagged | wrong | correct
+
+  useEffect(() => { if (!open) { setSearch(""); setFilter("all"); } }, [open]);
+
+  const items = useMemo(() => {
+    return examQuestions.map((q, posIdx) => {
+      const resp = responses[q.id];
+      return {
+        posIdx,
+        q,
+        status: resp ? (resp.correct ? "correct" : "wrong") : "unanswered",
+        flagged: flagged.has(q.id),
+      };
+    });
+  }, [examQuestions, responses, flagged]);
+
+  const filtered = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    return items.filter((it) => {
+      if (filter === "unanswered" && it.status !== "unanswered") return false;
+      if (filter === "flagged" && !it.flagged) return false;
+      if (filter === "wrong" && it.status !== "wrong") return false;
+      if (filter === "correct" && it.status !== "correct") return false;
+      if (!s) return true;
+      return (
+        it.q.stem.toLowerCase().includes(s) ||
+        it.q.domain.toLowerCase().includes(s) ||
+        it.q.id.toLowerCase().includes(s)
+      );
+    });
+  }, [items, search, filter]);
+
+  return (
+    <>
+      <div className={"drawer-scrim" + (open ? " open" : "")} onClick={onClose}></div>
+      <aside className={"drawer" + (open ? " open" : "")} aria-hidden={!open}>
+        <div className="drawer-head">
+          <Icon.list />
+          <span className="drawer-title">Questions</span>
+          <button className="icon-btn square" onClick={onClose} aria-label="Close palette"><Icon.close /></button>
+        </div>
+        <div className="drawer-search-row">
+          <input
+            className="search-input"
+            type="search"
+            placeholder="Search questions, domains, IDs…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <div className="filter-chips">
+            {[
+              ["all", "All"],
+              ["unanswered", "Unanswered"],
+              ["flagged", "Flagged"],
+              ["correct", "Correct"],
+              ["wrong", "Wrong"],
+            ].map(([k, l]) => (
+              <button key={k} className={"chip" + (filter === k ? " active" : "")} onClick={() => setFilter(k)}>{l}</button>
+            ))}
+          </div>
+        </div>
+        <div className="drawer-list">
+          {filtered.length === 0 && <div className="palette-empty">No questions match.</div>}
+          {filtered.map((it) => (
+            <button
+              key={it.q.id}
+              className={"palette-row" + (it.posIdx === currentIndex ? " current" : "")}
+              onClick={() => { onJump(it.posIdx); onClose(); }}
+            >
+              <span className="palette-num">{String(it.posIdx + 1).padStart(2, "0")}</span>
+              <span className="palette-stem">{it.q.stem}</span>
+              <span className="palette-marks">
+                {it.flagged && <span className="palette-mark flagged" title="Flagged"></span>}
+                {it.status === "correct" && <span className="palette-mark correct" title="Correct"></span>}
+                {it.status === "wrong" && <span className="palette-mark wrong" title="Wrong"></span>}
+              </span>
+            </button>
+          ))}
+        </div>
+      </aside>
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Results screen
+// ─────────────────────────────────────────────────────────────────────────────
+function ResultsScreen({ pack, examQuestions, responses, flagged, elapsedMs, onReview, onRestart, onBackToStart }) {
+  const total = examQuestions.length;
+  const answered = examQuestions.filter((q) => responses[q.id]).length;
+  const correct = examQuestions.filter((q) => responses[q.id]?.correct).length;
+  const wrong = answered - correct;
+  const pct = total ? Math.round((correct / total) * 100) : 0;
+
+  const byDomain = useMemo(() => {
+    const map = {};
+    examQuestions.forEach((q) => {
+      const d = q.domain;
+      if (!map[d]) map[d] = { total: 0, correct: 0 };
+      map[d].total += 1;
+      if (responses[q.id]?.correct) map[d].correct += 1;
+    });
+    return Object.entries(map).map(([name, v]) => ({ name, ...v }));
+  }, [examQuestions, responses]);
+
+  return (
+    <div className="results-wrap">
+      <div className="results-card">
+        <div className="start-eyebrow">Exam complete · {pack.code}</div>
+        <div className="results-score">
+          <span className="results-percent">{pct}%</span>
+          <span className="results-fraction">{correct} / {total} correct</span>
+        </div>
+        <div style={{color: "var(--ink-2)", fontSize: 14}}>Finished in {formatTime(elapsedMs)}</div>
+
+        <div className="results-stats">
+          <div className="stat-card">
+            <div className="stat-label">Correct</div>
+            <div className="stat-value good">{correct}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Incorrect</div>
+            <div className="stat-value bad">{wrong}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Flagged</div>
+            <div className="stat-value">{flagged.size}</div>
+          </div>
+        </div>
+
+        <div className="start-eyebrow" style={{marginTop: 8}}>By domain</div>
+        <div className="domain-list">
+          {byDomain.map((d) => {
+            const p = d.total ? Math.round((d.correct / d.total) * 100) : 0;
+            return (
+              <div className="domain-row" key={d.name}>
+                <span className="domain-name">{d.name}</span>
+                <div className="domain-bar"><div className="domain-bar-fill" style={{width: p + "%"}}></div></div>
+                <span className="domain-score mono">{d.correct}/{d.total} · {p}%</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="start-actions" style={{marginTop: 28}}>
+          <button className="primary-btn" onClick={onReview}>Review answers &nbsp;→</button>
+          <button className="ghost-btn" onClick={onRestart}>Retake same set</button>
+          <button className="ghost-btn" onClick={onBackToStart}>Change exam</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main App
+// ─────────────────────────────────────────────────────────────────────────────
+function App() {
+  // Tweaks-backed settings (also drive theme/density CSS vars)
+  const [tweaks, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
+
+  // Apply CSS-affecting tweaks to <html>
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", tweaks.theme || "light");
+    document.documentElement.setAttribute("data-density", tweaks.density || "comfortable");
+    document.documentElement.setAttribute("data-accent", tweaks.accent || "blue");
+  }, [tweaks.theme, tweaks.density, tweaks.accent]);
+
+  // Build pack registry: built-in packs from window.ExamPacks + uploaded customs
+  const [customPacks, setCustomPacks] = useState(() => window.PackLoader.loadCustomPacks());
+  const packs = useMemo(
+    () => [...Object.values(window.ExamPacks || {}), ...customPacks],
+    [customPacks]
+  );
+
+  const [uploadError, setUploadError] = useState(null);
+  const [uploadWarnings, setUploadWarnings] = useState(null);
+
+  const handleUpload = async (file) => {
+    setUploadError(null);
+    setUploadWarnings(null);
+    try {
+      const text = await window.PackLoader.readFileAsText(file);
+      let parsed;
+      try { parsed = JSON.parse(text); }
+      catch (e) {
+        setUploadError([`${file.name}: invalid JSON — ${e.message}`]);
+        return;
+      }
+      const { pack, errors, warnings } = window.PackLoader.validatePack(parsed);
+      if (errors.length) {
+        setUploadError([`${file.name}:`, ...errors]);
+        return;
+      }
+      setCustomPacks((list) => {
+        const next = [...list, pack];
+        window.PackLoader.saveCustomPacks(next);
+        return next;
+      });
+      if (warnings.length) setUploadWarnings(warnings);
+    } catch (e) {
+      setUploadError([`${file.name}: ${e.message || "could not read file"}`]);
+    }
+  };
+
+  const handleDeleteCustom = (slug) => {
+    setCustomPacks((list) => {
+      const next = list.filter((p) => p.slug !== slug);
+      window.PackLoader.saveCustomPacks(next);
+      return next;
+    });
+  };
+
+  const dismissUpload = () => { setUploadError(null); setUploadWarnings(null); };
+
+  // App state machine
+  const [mode, setMode] = useState("start");        // 'start' | 'exam' | 'results'
+  const [pack, setPack] = useState(null);
+  const [examQuestions, setExamQuestions] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [responses, setResponses] = useState({});    // { qid: { selected, correct, ts } }
+  const [flagged, setFlagged] = useState(new Set());
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [startedAt, setStartedAt] = useState(0);
+  const [endedAt, setEndedAt] = useState(0);
+
+  // Estimated time remaining = unanswered × minutes-per-question.
+  // Static (no ticking) — only changes when an answer is recorded.
+
+  // Start exam
+  const handleStart = (selectedPack, shuffleQuestions, shuffleAnswers) => {
+    // 1. Question order
+    const qs = [...selectedPack.questions];
+    if (shuffleQuestions) {
+      for (let i = qs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [qs[i], qs[j]] = [qs[j], qs[i]];
+      }
+    }
+    // 2. Per-question option shuffle + key remap
+    const prepared = qs.map((q) => {
+      let opts = q.options.map((o) => ({ ...o }));
+      if (shuffleAnswers && opts.length > 1) {
+        for (let i = opts.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [opts[i], opts[j]] = [opts[j], opts[i]];
+        }
+      }
+      // Remap keys to A/B/C/D… in display order; track original key per option
+      const remapped = opts.map((o, idx) => {
+        const newKey = String.fromCharCode(65 + idx);
+        return { key: newKey, text: o.text, _origKey: o.key };
+      });
+      const newAnswer = remapped.find((o) => o._origKey === q.answer)?.key || q.answer;
+      let newRationale = null;
+      if (q.rationale) {
+        newRationale = {};
+        for (const o of remapped) {
+          if (q.rationale[o._origKey] != null) newRationale[o.key] = q.rationale[o._origKey];
+        }
+      }
+      return {
+        ...q,
+        options: remapped.map(({ key, text }) => ({ key, text })),
+        answer: newAnswer,
+        rationale: newRationale,
+      };
+    });
+
+    setPack(selectedPack);
+    setExamQuestions(prepared);
+    setCurrentIndex(0);
+    setResponses({});
+    setFlagged(new Set());
+    setStartedAt(Date.now());
+    setEndedAt(0);
+    setMode("exam");
+  };
+
+  // Navigation
+  const goNext = useCallback(() => {
+    setCurrentIndex((i) => {
+      if (i + 1 >= examQuestions.length) {
+        setEndedAt(Date.now());
+        setMode("results");
+        return i;
+      }
+      return i + 1;
+    });
+  }, [examQuestions.length]);
+
+  const goPrev = useCallback(() => {
+    setCurrentIndex((i) => Math.max(0, i - 1));
+  }, []);
+
+  const jumpTo = (idx) => {
+    setCurrentIndex(Math.max(0, Math.min(examQuestions.length - 1, idx)));
+  };
+
+  // Answer selection
+  const currentQ = mode === "exam" && examQuestions.length ? examQuestions[currentIndex] : null;
+  const currentResponse = currentQ ? responses[currentQ.id] : null;
+
+  const handleSelect = (key) => {
+    if (!currentQ || currentResponse) return;
+    const correct = key === currentQ.answer;
+    setResponses((r) => ({
+      ...r,
+      [currentQ.id]: { selected: key, correct, ts: Date.now() },
+    }));
+    // No auto-advance — user clicks Next when ready.
+  };
+
+  const toggleFlag = () => {
+    if (!currentQ) return;
+    setFlagged((f) => {
+      const n = new Set(f);
+      if (n.has(currentQ.id)) n.delete(currentQ.id); else n.add(currentQ.id);
+      return n;
+    });
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (mode !== "exam") return;
+    const onKey = (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      if (e.key === "ArrowRight") { e.preventDefault(); goNext(); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); goPrev(); }
+      else if (e.key === "p" || e.key === "P") { setDrawerOpen((o) => !o); }
+      else if (e.key === "d" || e.key === "D") { setTweak("theme", tweaks.theme === "dark" ? "light" : "dark"); }
+      else if (e.key === "f" || e.key === "F") { toggleFlag(); }
+      else if (currentQ && !currentResponse && ["1","2","3","4"].includes(e.key)) {
+        const map = ["A","B","C","D"];
+        handleSelect(map[parseInt(e.key) - 1]);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode, goNext, goPrev, currentQ, currentResponse, tweaks.theme]);
+
+  // Reset / restart helpers
+  const restartSameSet = () => {
+    setResponses({});
+    setFlagged(new Set());
+    setCurrentIndex(0);
+    setStartedAt(Date.now());
+    setEndedAt(0);
+    setMode("exam");
+  };
+  const backToStart = () => {
+    setPack(null); setExamQuestions([]); setCurrentIndex(0); setResponses({}); setFlagged(new Set());
+    setMode("start");
+  };
+  const reviewAnswers = () => {
+    setCurrentIndex(0);
+    setMode("exam");
+  };
+
+  // Derived
+  const total = examQuestions.length;
+  const answeredCount = Object.keys(responses).length;
+  const remainingMins = Math.max(0, (total - answeredCount) * (tweaks.minutesPerQuestion || 3));
+  const progressPct = total ? (answeredCount / total) * 100 : 0;
+
+  return (
+    <div className="app-shell">
+      <Topbar
+        mode={mode}
+        pack={pack}
+        theme={tweaks.theme}
+        onToggleTheme={() => setTweak("theme", tweaks.theme === "dark" ? "light" : "dark")}
+        explanationMode={tweaks.explanationMode}
+        onToggleExplanation={() => setTweak("explanationMode", !tweaks.explanationMode)}
+        onOpenPalette={() => setDrawerOpen(true)}
+        currentIndex={currentIndex}
+        total={total}
+        showTimer={!!tweaks.showTimer}
+        remainingMins={remainingMins}
+        onRestart={mode === "results" ? restartSameSet : backToStart}
+      />
+
+      {mode === "start" && (
+        <StartScreen
+          packs={packs}
+          onStart={handleStart}
+          onUpload={handleUpload}
+          onDeleteCustom={handleDeleteCustom}
+          uploadError={uploadError}
+          uploadWarnings={uploadWarnings}
+          onDismissUpload={dismissUpload}
+        />
+      )}
+
+      {mode === "exam" && currentQ && (
+        <div className="exam-layout">
+          {/* Left side-of-screen click zone — Previous */}
+          <button
+            className="side-zone left"
+            onClick={goPrev}
+            disabled={currentIndex === 0}
+            aria-label="Previous question"
+            title="Previous (←)"
+          >
+            <span className="side-zone-inner">
+              <span className="side-zone-arrow"><Icon.arrowLeft /></span>
+              <span>Prev</span>
+            </span>
+          </button>
+
+          <main className="exam-main">
+            <div className="exam-container">
+              <QuestionCard
+                question={currentQ}
+                index={currentIndex}
+                total={total}
+                response={currentResponse}
+                flagged={flagged.has(currentQ.id)}
+                onSelect={handleSelect}
+                onToggleFlag={toggleFlag}
+                explanationMode={!!tweaks.explanationMode}
+              />
+
+              {/* Bottom nav row (mobile only — hidden on desktop via CSS) */}
+              <div className="nav-row">
+                <button className="ghost-btn" onClick={goPrev} disabled={currentIndex === 0}>
+                  <Icon.arrowLeft /> Previous
+                </button>
+                <button className="ghost-btn" onClick={goNext}>
+                  {currentIndex + 1 >= total ? "Finish" : "Next"} <Icon.arrowRight />
+                </button>
+              </div>
+              <span className="nav-row-hint mono">
+                1–4 answer · ← → nav · F flag · P palette
+              </span>
+            </div>
+          </main>
+
+          {/* Right side-of-screen click zone — Next / Finish */}
+          <button
+            className="side-zone right"
+            onClick={goNext}
+            aria-label={currentIndex + 1 >= total ? "Finish exam" : "Next question"}
+            title={currentIndex + 1 >= total ? "Finish" : "Next (→)"}
+          >
+            <span className="side-zone-inner">
+              {currentIndex + 1 >= total ? (
+                <span className="side-zone-arrow side-zone-finish">Finish <Icon.arrowRight /></span>
+              ) : (
+                <>
+                  <span className="side-zone-arrow"><Icon.arrowRight /></span>
+                  <span>Next</span>
+                </>
+              )}
+            </span>
+          </button>
+
+          <PaletteDrawer
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            examQuestions={examQuestions}
+            responses={responses}
+            flagged={flagged}
+            currentIndex={currentIndex}
+            onJump={jumpTo}
+            domains={pack.domains}
+          />
+        </div>
+      )}
+
+      {mode === "results" && pack && (
+        <ResultsScreen
+          pack={pack}
+          examQuestions={examQuestions}
+          responses={responses}
+          flagged={flagged}
+          elapsedMs={endedAt - startedAt}
+          onReview={reviewAnswers}
+          onRestart={restartSameSet}
+          onBackToStart={backToStart}
+        />
+      )}
+
+      {/* Tweaks panel (host injects toggle in toolbar) */}
+      <AppTweaks tweaks={tweaks} setTweak={setTweak} />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tweaks panel
+// ─────────────────────────────────────────────────────────────────────────────
+function AppTweaks({ tweaks, setTweak }) {
+  const {
+    TweaksPanel, TweakSection, TweakRadio, TweakSelect, TweakToggle, TweakSlider,
+  } = window;
+
+  return (
+    <TweaksPanel>
+      <TweakSection label="Appearance">
+        <TweakRadio
+          label="Theme"
+          value={tweaks.theme}
+          onChange={(v) => setTweak("theme", v)}
+          options={[{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }]}
+        />
+        <TweakRadio
+          label="Density"
+          value={tweaks.density}
+          onChange={(v) => setTweak("density", v)}
+          options={[
+            { value: "compact", label: "Compact" },
+            { value: "comfortable", label: "Comfy" },
+            { value: "spacious", label: "Roomy" },
+          ]}
+        />
+        <TweakSelect
+          label="Accent"
+          value={tweaks.accent}
+          onChange={(v) => setTweak("accent", v)}
+          options={[
+            { value: "blue", label: "Indigo" },
+            { value: "teal", label: "Teal" },
+            { value: "violet", label: "Violet" },
+            { value: "orange", label: "Amber" },
+          ]}
+        />
+      </TweakSection>
+
+      <TweakSection label="Behavior">
+        <TweakToggle
+          label="Explanation mode"
+          value={!!tweaks.explanationMode}
+          onChange={(v) => setTweak("explanationMode", v)}
+        />
+        <TweakToggle
+          label="Show time remaining"
+          value={!!tweaks.showTimer}
+          onChange={(v) => setTweak("showTimer", v)}
+        />
+        <TweakSlider
+          label="Mins per question"
+          unit="m"
+          min={1}
+          max={10}
+          step={1}
+          value={tweaks.minutesPerQuestion || 3}
+          onChange={(v) => setTweak("minutesPerQuestion", v)}
+        />
+      </TweakSection>
+    </TweaksPanel>
+  );
+}
+
+// Mount
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
