@@ -9,6 +9,12 @@ import {
   AI_PROMPT,
 } from './pack-loader.js';
 import {
+  saveSession,
+  loadSession,
+  clearSession,
+  lastAnsweredIndex,
+} from './session.js';
+import {
   useTweaks,
   TweaksPanel,
   TweakSection,
@@ -683,16 +689,25 @@ function App() {
 
   const dismissUpload = () => { setUploadError(null); setUploadWarnings(null); };
 
-  // App state machine
-  const [mode, setMode] = useState("start");        // 'start' | 'exam' | 'results'
-  const [pack, setPack] = useState(null);
-  const [examQuestions, setExamQuestions] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [responses, setResponses] = useState({});    // { qid: { selected, correct, ts } }
-  const [flagged, setFlagged] = useState(new Set());
+  // App state machine — seeded from any persisted session so closing and
+  // reopening the tab resumes where the user left off. Per spec, the
+  // initial question on resume is the last one with a recorded answer.
+  const initialSession = useMemo(() => loadSession(), []);
+  const initialIndex = initialSession
+    ? (initialSession.mode === "exam"
+        ? lastAnsweredIndex(initialSession.examQuestions, initialSession.responses)
+        : initialSession.currentIndex)
+    : 0;
+
+  const [mode, setMode] = useState(initialSession ? initialSession.mode : "start");
+  const [pack, setPack] = useState(initialSession ? initialSession.pack : null);
+  const [examQuestions, setExamQuestions] = useState(initialSession ? initialSession.examQuestions : []);
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [responses, setResponses] = useState(initialSession ? initialSession.responses : {});
+  const [flagged, setFlagged] = useState(initialSession ? initialSession.flagged : new Set());
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [startedAt, setStartedAt] = useState(0);
-  const [endedAt, setEndedAt] = useState(0);
+  const [startedAt, setStartedAt] = useState(initialSession ? initialSession.startedAt : 0);
+  const [endedAt, setEndedAt] = useState(initialSession ? initialSession.endedAt : 0);
 
   // Estimated time remaining = unanswered × minutes-per-question.
   // Static (no ticking) — only changes when an answer is recorded.
@@ -854,6 +869,15 @@ function App() {
     };
   }, [mode, drawerOpen, goNext, goPrev]);
 
+  // Persist exam progress to localStorage while a session is active so a
+  // closed tab can be resumed. Cleared explicitly on backToStart.
+  useEffect(() => {
+    if (mode === "start" || examQuestions.length === 0) return;
+    saveSession({
+      mode, pack, examQuestions, responses, flagged, currentIndex, startedAt, endedAt,
+    });
+  }, [mode, pack, examQuestions, responses, flagged, currentIndex, startedAt, endedAt]);
+
   // Reset / restart helpers
   const restartSameSet = () => {
     setResponses({});
@@ -864,6 +888,7 @@ function App() {
     setMode("exam");
   };
   const backToStart = () => {
+    clearSession();
     setPack(null); setExamQuestions([]); setCurrentIndex(0); setResponses({}); setFlagged(new Set());
     setMode("start");
   };
