@@ -363,7 +363,7 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
 // ─────────────────────────────────────────────────────────────────────────────
 // Option card
 // ─────────────────────────────────────────────────────────────────────────────
-function OptionCard({ option, isSelected, isCorrect, locked, showRationale, rationaleText, onClick }) {
+function OptionCard({ option, isSelected, isCorrect, locked, showRationale, rationaleText, onClick, buttonRef }) {
   const showCorrect = locked && option.key === option._correctKey;
   const showIncorrect = locked && isSelected && !showCorrect;
   const isDim = locked && !showCorrect && !showIncorrect;
@@ -375,6 +375,7 @@ function OptionCard({ option, isSelected, isCorrect, locked, showRationale, rati
 
   return (
     <button
+      ref={buttonRef}
       className={cls}
       disabled={locked}
       onClick={onClick}
@@ -402,6 +403,18 @@ function QuestionCard({
 }) {
   const locked = !!response;
   const diffClass = "diff-" + (question.difficulty || "medium").toLowerCase();
+  const optionRefs = useRef({});
+
+  // When the user picks an answer and explanation mode is on, scroll the
+  // selected option into view so the rationale lands in front of them.
+  useEffect(() => {
+    if (!explanationMode || !response?.selected) return;
+    const el = optionRefs.current[response.selected];
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [response?.selected, explanationMode]);
 
   return (
     <article className="question-card" data-screen-label={`Question ${index + 1}`}>
@@ -425,6 +438,7 @@ function QuestionCard({
         {question.options.map((opt) => (
           <OptionCard
             key={opt.key}
+            buttonRef={(el) => { optionRefs.current[opt.key] = el; }}
             option={{ ...opt, _correctKey: question.answer }}
             isSelected={response?.selected === opt.key}
             isCorrect={opt.key === question.answer}
@@ -794,6 +808,51 @@ function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [mode, goNext, goPrev, currentQ, currentResponse, tweaks.theme]);
+
+  // Auto-scroll back to the top of the page whenever the question changes,
+  // so the new question stem is always in view.
+  useEffect(() => {
+    if (mode !== "exam") return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentIndex, mode]);
+
+  // Swipe left/right on touch devices to navigate questions. Threshold
+  // (~50px) keeps taps and short drags from misfiring; the off-axis cap
+  // ignores vertical scrolls.
+  useEffect(() => {
+    if (mode !== "exam") return;
+    const SWIPE_MIN = 50;
+    const SWIPE_MAX_OFF_AXIS = 80;
+    let startX = 0;
+    let startY = 0;
+    let active = false;
+
+    const onTouchStart = (e) => {
+      if (drawerOpen) return;
+      if (e.touches.length > 1) { active = false; return; }
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      active = true;
+    };
+    const onTouchEnd = (e) => {
+      if (!active) return;
+      active = false;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - startX;
+      const dy = Math.abs(t.clientY - startY);
+      if (Math.abs(dx) >= SWIPE_MIN && dy < SWIPE_MAX_OFF_AXIS) {
+        if (dx < 0) goNext();
+        else goPrev();
+      }
+    };
+
+    document.addEventListener("touchstart", onTouchStart, { passive: true });
+    document.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", onTouchStart);
+      document.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [mode, drawerOpen, goNext, goPrev]);
 
   // Reset / restart helpers
   const restartSameSet = () => {
