@@ -30,6 +30,7 @@ import {
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "theme": "light",
   "explanationMode": true,
+  "studyMode": false,
   "density": "comfortable",
   "accent": "blue",
   "showTimer": true,
@@ -62,6 +63,7 @@ const formatRemaining = (mins) => {
 function Topbar({
   mode, pack, theme, onToggleTheme,
   explanationMode, onToggleExplanation,
+  studyMode, onToggleStudy,
   onOpenPalette, currentIndex, total,
   showTimer, remainingMins, onRestart,
 }) {
@@ -104,6 +106,20 @@ function Topbar({
           className={"switch " + (explanationMode ? "on" : "")}
           onClick={onToggleExplanation}
           onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); onToggleExplanation(); } }}
+        />
+      </div>
+
+      <div className="toggle-row">
+        <label className="toggle-row-label" htmlFor="study-mode" title="Reveal the correct answer without picking">Study</label>
+        <div
+          id="study-mode"
+          role="switch"
+          aria-checked={studyMode}
+          aria-label="Study mode"
+          tabIndex={0}
+          className={"switch " + (studyMode ? "on" : "")}
+          onClick={onToggleStudy}
+          onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); onToggleStudy(); } }}
         />
       </div>
 
@@ -405,9 +421,11 @@ function OptionCard({ option, isSelected, isCorrect, locked, showRationale, rati
 function QuestionCard({
   question, index, total,
   response, flagged, onSelect, onToggleFlag,
-  explanationMode,
+  explanationMode, studyMode,
 }) {
-  const locked = !!response;
+  // Study mode reveals the correct answer up front without recording a
+  // response, so the locked/revealed UI runs for either condition.
+  const locked = !!response || studyMode;
   const diffClass = "diff-" + (question.difficulty || "medium").toLowerCase();
   const optionRefs = useRef({});
 
@@ -900,7 +918,10 @@ function App() {
   // Derived
   const total = examQuestions.length;
   const answeredCount = Object.keys(responses).length;
-  const remainingMins = Math.max(0, (total - answeredCount) * (tweaks.minutesPerQuestion || 3));
+  // Counts the remaining questions starting at the user's current position
+  // (not the unanswered count) — jumping forward via the palette reduces it,
+  // jumping back increases it.
+  const remainingMins = Math.max(0, (total - currentIndex) * (tweaks.minutesPerQuestion || 3));
   const progressPct = total ? (answeredCount / total) * 100 : 0;
 
   return (
@@ -912,6 +933,8 @@ function App() {
         onToggleTheme={() => setTweak("theme", tweaks.theme === "dark" ? "light" : "dark")}
         explanationMode={tweaks.explanationMode}
         onToggleExplanation={() => setTweak("explanationMode", !tweaks.explanationMode)}
+        studyMode={!!tweaks.studyMode}
+        onToggleStudy={() => setTweak("studyMode", !tweaks.studyMode)}
         onOpenPalette={() => setDrawerOpen(true)}
         currentIndex={currentIndex}
         total={total}
@@ -959,6 +982,7 @@ function App() {
                 onSelect={handleSelect}
                 onToggleFlag={toggleFlag}
                 explanationMode={!!tweaks.explanationMode}
+                studyMode={!!tweaks.studyMode}
               />
 
               {/* Bottom nav row (mobile only — hidden on desktop via CSS) */}
@@ -1068,6 +1092,11 @@ function AppTweaks({ tweaks, setTweak }) {
           label="Explanation mode"
           value={!!tweaks.explanationMode}
           onChange={(v) => setTweak("explanationMode", v)}
+        />
+        <TweakToggle
+          label="Study mode"
+          value={!!tweaks.studyMode}
+          onChange={(v) => setTweak("studyMode", v)}
         />
         <TweakToggle
           label="Show time remaining"
