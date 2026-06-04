@@ -327,7 +327,7 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
                 <tr><td className="mono">id</td><td>string</td><td>Unique within the pack. Auto-generated if omitted.</td></tr>
                 <tr><td className="mono"><strong>stem</strong></td><td>string</td><td>The question text.</td></tr>
                 <tr><td className="mono"><strong>options</strong></td><td>array</td><td>2+ entries. Each is <span className="mono">{`{ key, text }`}</span> — or just a string (keys auto-assigned A/B/C/D).</td></tr>
-                <tr><td className="mono"><strong>answer</strong></td><td>string</td><td>The <span className="mono">key</span> of the correct option (e.g. <span className="mono">"C"</span>).</td></tr>
+                <tr><td className="mono"><strong>answer</strong></td><td>string or array</td><td>The <span className="mono">key</span> of the correct option (e.g. <span className="mono">"C"</span>), or an array for multi-select questions (e.g. <span className="mono">["A","D"]</span>).</td></tr>
                 <tr><td className="mono">rationale</td><td>object</td><td>Map of option key → explanation, e.g. <span className="mono">{`{ "A": "...", "B": "..." }`}</span>. Shown when Explanations mode is on.</td></tr>
                 <tr><td className="mono">explanation</td><td>string</td><td>Summary paragraph shown below the options.</td></tr>
                 <tr><td className="mono">domain</td><td>string</td><td>Topic group. Defaults to "General".</td></tr>
@@ -385,15 +385,17 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
 // ─────────────────────────────────────────────────────────────────────────────
 // Option card
 // ─────────────────────────────────────────────────────────────────────────────
-function OptionCard({ option, isSelected, isCorrect, locked, showRationale, rationaleText, onClick, buttonRef }) {
-  const showCorrect = locked && option.key === option._correctKey;
-  const showIncorrect = locked && isSelected && !showCorrect;
+function OptionCard({ option, isSelected, isCorrect, isPending, isMulti, locked, showRationale, rationaleText, onClick, buttonRef }) {
+  const showCorrect = locked && isCorrect;
+  const showIncorrect = locked && isSelected && !isCorrect;
   const isDim = locked && !showCorrect && !showIncorrect;
 
   let cls = "option-card";
   if (showCorrect) cls += " is-correct";
   else if (showIncorrect) cls += " is-incorrect";
   else if (isDim) cls += " is-dim";
+  if (isPending) cls += " is-pending";
+  if (isMulti) cls += " is-multi";
 
   return (
     <button
@@ -401,6 +403,7 @@ function OptionCard({ option, isSelected, isCorrect, locked, showRationale, rati
       className={cls}
       disabled={locked}
       onClick={onClick}
+      aria-pressed={isMulti ? (isPending || (locked && isSelected)) : undefined}
     >
       <div className="option-row">
         <span className="opt-key mono">{option.key}</span>
@@ -423,22 +426,57 @@ function QuestionCard({
   response, flagged, onSelect, onToggleFlag,
   explanationMode, studyMode,
 }) {
+  const isMulti = Array.isArray(question.answer);
+  const requiredPicks = isMulti ? question.answer.length : 1;
   // Study mode reveals the correct answer up front without recording a
   // response, so the locked/revealed UI runs for either condition.
   const locked = !!response || studyMode;
   const diffClass = "diff-" + (question.difficulty || "medium").toLowerCase();
   const optionRefs = useRef({});
 
+  // Multi-select: in-progress picks before the user submits. Reset per
+  // question via the question.id key so navigating away discards them.
+  const [pending, setPending] = useState([]);
+  useEffect(() => { setPending([]); }, [question.id]);
+
+  // Which option keys are currently in the "selected" visual state, in
+  // both locked and pre-lock multi.
+  const selectedKeys = (() => {
+    if (locked) {
+      if (!response) return []; // studyMode reveal with no response
+      return Array.isArray(response.selected) ? response.selected : [response.selected];
+    }
+    return pending;
+  })();
+  const isKeyCorrect = (key) =>
+    Array.isArray(question.answer) ? question.answer.includes(key) : key === question.answer;
+
   // When the user picks an answer and explanation mode is on, scroll the
-  // selected option into view so the rationale lands in front of them.
+  // first selected option into view so the rationale lands in front.
   useEffect(() => {
-    if (!explanationMode || !response?.selected) return;
-    const el = optionRefs.current[response.selected];
+    if (!explanationMode || !response) return;
+    const first = Array.isArray(response.selected) ? response.selected[0] : response.selected;
+    if (!first) return;
+    const el = optionRefs.current[first];
     if (!el) return;
     requestAnimationFrame(() => {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
     });
-  }, [response?.selected, explanationMode]);
+  }, [response, explanationMode]);
+
+  const togglePending = (key) => {
+    setPending((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]);
+  };
+  const submitMulti = () => {
+    if (pending.length !== requiredPicks) return;
+    onSelect(pending);
+  };
+
+  const handleOptionClick = (key) => {
+    if (locked) return;
+    if (isMulti) togglePending(key);
+    else onSelect(key);
+  };
 
   return (
     <article className="question-card" data-screen-label={`Question ${index + 1}`}>
@@ -446,6 +484,11 @@ function QuestionCard({
         <span className="q-num mono">Q{String(index + 1).padStart(2, "0")}</span>
         <span className="q-tag mono">{question.domain}</span>
         <span className={"q-tag mono " + diffClass}>{question.difficulty}</span>
+        {isMulti && (
+          <span className="q-tag mono q-tag-multi" title={`Select ${requiredPicks} answers`}>
+            Select {requiredPicks}
+          </span>
+        )}
         <button
           className={"q-flag" + (flagged ? " flagged" : "")}
           onClick={onToggleFlag}
@@ -464,15 +507,30 @@ function QuestionCard({
             key={opt.key}
             buttonRef={(el) => { optionRefs.current[opt.key] = el; }}
             option={{ ...opt, _correctKey: question.answer }}
-            isSelected={response?.selected === opt.key}
-            isCorrect={opt.key === question.answer}
+            isSelected={selectedKeys.includes(opt.key)}
+            isCorrect={isKeyCorrect(opt.key)}
+            isPending={!locked && isMulti && pending.includes(opt.key)}
+            isMulti={isMulti}
             locked={locked}
             showRationale={locked && explanationMode}
             rationaleText={question.rationale?.[opt.key]}
-            onClick={() => onSelect(opt.key)}
+            onClick={() => handleOptionClick(opt.key)}
           />
         ))}
       </div>
+
+      {isMulti && !locked && (
+        <div className="multi-submit-row">
+          <span className="multi-count mono">{pending.length} / {requiredPicks} selected</span>
+          <button
+            className="primary-btn small"
+            disabled={pending.length !== requiredPicks}
+            onClick={submitMulti}
+          >
+            Submit answer
+          </button>
+        </div>
+      )}
 
       {locked && explanationMode && question.explanation && (
         <div className="explanation-card">
@@ -754,7 +812,8 @@ function App() {
         const newKey = String.fromCharCode(65 + idx);
         return { key: newKey, text: o.text, _origKey: o.key };
       });
-      const newAnswer = remapped.find((o) => o._origKey === q.answer)?.key || q.answer;
+      const keyFor = (orig) => remapped.find((o) => o._origKey === orig)?.key || orig;
+      const newAnswer = Array.isArray(q.answer) ? q.answer.map(keyFor) : keyFor(q.answer);
       let newRationale = null;
       if (q.rationale) {
         newRationale = {};
@@ -804,14 +863,28 @@ function App() {
   const currentQ = mode === "exam" && examQuestions.length ? examQuestions[currentIndex] : null;
   const currentResponse = currentQ ? responses[currentQ.id] : null;
 
-  const handleSelect = (key) => {
+  // Lock in an answer. `pick` is a single key (single-answer Qs) or an
+  // array of keys (multi-select). Correctness for multi requires the exact
+  // set match.
+  const handleSelect = (pick) => {
     if (!currentQ || currentResponse) return;
-    const correct = key === currentQ.answer;
+    const answer = currentQ.answer;
+    let correct, selected;
+    if (Array.isArray(answer)) {
+      const picks = Array.isArray(pick) ? pick : [pick];
+      const sortedPicks = [...picks].sort().join("");
+      const sortedAns = [...answer].sort().join("");
+      correct = sortedPicks === sortedAns;
+      selected = picks;
+    } else {
+      const key = Array.isArray(pick) ? pick[0] : pick;
+      correct = key === answer;
+      selected = key;
+    }
     setResponses((r) => ({
       ...r,
-      [currentQ.id]: { selected: key, correct, ts: Date.now() },
+      [currentQ.id]: { selected, correct, ts: Date.now() },
     }));
-    // No auto-advance — user clicks Next when ready.
   };
 
   const toggleFlag = () => {
@@ -833,9 +906,11 @@ function App() {
       else if (e.key === "p" || e.key === "P") { setDrawerOpen((o) => !o); }
       else if (e.key === "d" || e.key === "D") { setTweak("theme", tweaks.theme === "dark" ? "light" : "dark"); }
       else if (e.key === "f" || e.key === "F") { toggleFlag(); }
-      else if (currentQ && !currentResponse && ["1","2","3","4"].includes(e.key)) {
-        const map = ["A","B","C","D"];
-        handleSelect(map[parseInt(e.key) - 1]);
+      else if (currentQ && !currentResponse && !Array.isArray(currentQ.answer)
+               && ["1","2","3","4","5","6"].includes(e.key)) {
+        const map = ["A","B","C","D","E","F"];
+        const key = map[parseInt(e.key) - 1];
+        if (currentQ.options.some((o) => o.key === key)) handleSelect(key);
       }
     };
     window.addEventListener("keydown", onKey);

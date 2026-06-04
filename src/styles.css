@@ -787,6 +787,38 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 .option-card.is-incorrect { animation: popIn 280ms cubic-bezier(.4,.7,.2,1); }
 .option-card.is-dim { opacity: 0.62; transition: opacity 250ms ease; }
 
+/* Multi-select: pre-submit pending pick */
+.option-card.is-pending {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.option-card.is-pending .opt-key {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+}
+
+/* "Select N" tag and Submit row for multi-select questions */
+.q-tag.q-tag-multi {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.multi-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 16px;
+}
+.multi-count {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.multi-submit-row .primary-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* per-choice rationale (explanation mode) */
 .opt-rationale {
   margin-top: 8px;
