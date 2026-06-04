@@ -71,7 +71,7 @@ Each exam pack is a single JSON file matching this schema:
 | `questions` | array | At least one question |
 | `questions[].stem` | string | The question text |
 | `questions[].options` | array | 2+ options; each `{ key, text }` or just a string |
-| `questions[].answer` | string | Must match a `key` in `options` |
+| `questions[].answer` | string or array | A single `key` (e.g. `"C"`) for single-answer, or an array of keys (e.g. `["A","D"]`) for multi-select ("Choose two/three") |
 
 ### Optional fields (with defaults)
 

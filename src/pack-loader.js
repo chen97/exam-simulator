@@ -70,10 +70,26 @@ function validatePack(raw) {
     if (opts.some((o) => o === null)) return;
 
     const validKeys = opts.map((o) => o.key);
-    const answer = String(q.answer || "").toUpperCase();
-    if (!validKeys.includes(answer)) {
-      errors.push(`${qLabel}: \`answer\` "${q.answer}" does not match any option key (${validKeys.join(", ")}).`);
-      return;
+    // Answer is either a single key (string) or an array of keys (multi-select).
+    let answer;
+    if (Array.isArray(q.answer)) {
+      const set = Array.from(new Set(q.answer.map((k) => String(k).toUpperCase())));
+      if (set.length === 0) {
+        errors.push(`${qLabel}: \`answer\` array must be non-empty.`);
+        return;
+      }
+      const bad = set.filter((k) => !validKeys.includes(k));
+      if (bad.length) {
+        errors.push(`${qLabel}: \`answer\` keys [${bad.join(", ")}] do not match any option key (${validKeys.join(", ")}).`);
+        return;
+      }
+      answer = set.length === 1 ? set[0] : set;
+    } else {
+      answer = String(q.answer || "").toUpperCase();
+      if (!validKeys.includes(answer)) {
+        errors.push(`${qLabel}: \`answer\` "${q.answer}" does not match any option key (${validKeys.join(", ")}).`);
+        return;
+      }
     }
 
     // Rationale — optional. Accept {A: "...", B: "..."} or skip.
