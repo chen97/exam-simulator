@@ -1,4 +1,11 @@
 :root {
+  /* Tell the UA we're in light mode so iOS Safari doesn't auto-darken
+     native controls (selects, search inputs, scrollbars) on top of our
+     own theming. */
+  color-scheme: light;
+  /* Native form controls (radio, checkbox, range thumb, selection) pick
+     up our accent so they don't clash with the rest of the palette. */
+  accent-color: oklch(0.48 0.13 250);
   --bg: #f7f6f2;
   --bg-elev: #ffffff;
   --bg-sunken: #efede7;
@@ -28,6 +35,11 @@
 }
 
 html[data-theme="dark"] {
+  /* Signal real dark mode to the UA — without this, iOS Safari over-
+     darkens our already-dark form controls and scrollbars, producing
+     the muddy/inverted look the user reported. */
+  color-scheme: dark;
+  accent-color: oklch(0.72 0.13 250);
   --bg: #0e1014;
   --bg-elev: #16191f;
   --bg-sunken: #0a0c0f;
@@ -61,15 +73,15 @@ html[data-density="spacious"] {
   --density-option: 18px;
 }
 
-html[data-accent="blue"]   { --accent: oklch(0.48 0.13 250); --accent-soft: oklch(0.95 0.03 250); }
-html[data-accent="teal"]   { --accent: oklch(0.5 0.11 195); --accent-soft: oklch(0.95 0.03 195); }
-html[data-accent="violet"] { --accent: oklch(0.5 0.16 295); --accent-soft: oklch(0.95 0.04 295); }
-html[data-accent="orange"] { --accent: oklch(0.62 0.16 50); --accent-soft: oklch(0.96 0.04 50); }
+html[data-accent="blue"]   { --accent: oklch(0.48 0.13 250); --accent-soft: oklch(0.95 0.03 250); accent-color: oklch(0.48 0.13 250); }
+html[data-accent="teal"]   { --accent: oklch(0.5 0.11 195); --accent-soft: oklch(0.95 0.03 195); accent-color: oklch(0.5 0.11 195); }
+html[data-accent="violet"] { --accent: oklch(0.5 0.16 295); --accent-soft: oklch(0.95 0.04 295); accent-color: oklch(0.5 0.16 295); }
+html[data-accent="orange"] { --accent: oklch(0.62 0.16 50); --accent-soft: oklch(0.96 0.04 50); accent-color: oklch(0.62 0.16 50); }
 
-html[data-theme="dark"][data-accent="blue"]   { --accent: oklch(0.72 0.13 250); --accent-soft: oklch(0.28 0.06 250); }
-html[data-theme="dark"][data-accent="teal"]   { --accent: oklch(0.74 0.11 195); --accent-soft: oklch(0.28 0.05 195); }
-html[data-theme="dark"][data-accent="violet"] { --accent: oklch(0.74 0.16 295); --accent-soft: oklch(0.3 0.07 295); }
-html[data-theme="dark"][data-accent="orange"] { --accent: oklch(0.78 0.16 50); --accent-soft: oklch(0.32 0.07 50); }
+html[data-theme="dark"][data-accent="blue"]   { --accent: oklch(0.72 0.13 250); --accent-soft: oklch(0.28 0.06 250); accent-color: oklch(0.72 0.13 250); }
+html[data-theme="dark"][data-accent="teal"]   { --accent: oklch(0.74 0.11 195); --accent-soft: oklch(0.28 0.05 195); accent-color: oklch(0.74 0.11 195); }
+html[data-theme="dark"][data-accent="violet"] { --accent: oklch(0.74 0.16 295); --accent-soft: oklch(0.3 0.07 295); accent-color: oklch(0.74 0.16 295); }
+html[data-theme="dark"][data-accent="orange"] { --accent: oklch(0.78 0.16 50); --accent-soft: oklch(0.32 0.07 50); accent-color: oklch(0.78 0.16 50); }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
@@ -83,6 +95,8 @@ body {
   text-rendering: optimizeLegibility;
   font-feature-settings: "ss01", "cv11";
   transition: background-color 200ms ease, color 200ms ease;
+  /* Kill the iOS gray flash on tap — buttons have their own :active state. */
+  -webkit-tap-highlight-color: transparent;
 }
 .mono { font-family: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-feature-settings: "ss02"; }
 
@@ -986,10 +1000,18 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   padding: 9px 12px 9px 34px;
   font: inherit; font-size: 13.5px;
   color: var(--ink);
+  /* %23currentColor is invalid in url() — encode the ink-3 value per theme
+     instead. Light tone for default, overridden in dark. */
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237e8189' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/></svg>");
   background-repeat: no-repeat;
   background-position: 11px center;
 }
+html[data-theme="dark"] .search-input {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a4a7af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/></svg>");
+}
+.search-input::placeholder { color: var(--ink-3); }
+.search-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+
 .filter-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
   font-family: 'Geist Mono', monospace;
