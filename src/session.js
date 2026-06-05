@@ -6,7 +6,16 @@
 
 const SESSION_KEY = "examSim:session";
 
-export function saveSession(session) {
+// Coalesce rapid state updates into a single write per idle/animation tick so
+// typing/picking on slower devices isn't blocked by JSON.stringify of the full
+// session on every keystroke.
+let pendingSession = null;
+let scheduled = false;
+const flush = () => {
+  scheduled = false;
+  const session = pendingSession;
+  pendingSession = null;
+  if (!session) return;
   try {
     const serialized = {
       mode: session.mode,
@@ -22,6 +31,17 @@ export function saveSession(session) {
   } catch (e) {
     console.warn("Failed to save exam session:", e);
   }
+};
+
+export function saveSession(session) {
+  pendingSession = session;
+  if (scheduled) return;
+  scheduled = true;
+  const schedule =
+    typeof requestIdleCallback === "function"
+      ? (cb) => requestIdleCallback(cb, { timeout: 500 })
+      : (cb) => setTimeout(cb, 16);
+  schedule(flush);
 }
 
 export function loadSession() {

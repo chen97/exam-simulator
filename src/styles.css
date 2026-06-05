@@ -232,7 +232,16 @@ button { font-family: inherit; cursor: pointer; }
 }
 .pack-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pack-card:hover { border-color: var(--accent); background: var(--accent-soft); }
-.pack-card.selected { border-color: var(--accent); background: var(--accent-soft); }
+.pack-card.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  animation: packPop 220ms cubic-bezier(.4,.7,.2,1);
+}
+@keyframes packPop {
+  0%   { transform: scale(0.97); }
+  60%  { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
 .pack-code {
   font-family: 'Geist Mono', monospace;
   font-size: 12px;
@@ -263,7 +272,7 @@ button { font-family: inherit; cursor: pointer; }
   background: transparent;
   color: var(--ink-3);
   flex-shrink: 0;
-  transition: all 120ms;
+  transition: color 120ms, background-color 120ms;
 }
 .pack-delete:hover {
   color: var(--bad);
@@ -283,7 +292,7 @@ button { font-family: inherit; cursor: pointer; }
   cursor: pointer;
   color: var(--ink-2);
   background: transparent;
-  transition: all 140ms;
+  transition: border-color 140ms, background-color 140ms, color 140ms;
 }
 .dropzone:hover, .dropzone.is-over {
   border-color: var(--accent);
@@ -332,7 +341,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   color: var(--ink-2);
   font-size: 13.5px;
   margin-bottom: 14px;
-  transition: all 120ms;
+  transition: background-color 120ms, color 120ms;
 }
 .docs-toggle:hover { background: var(--bg-sunken); color: var(--ink); }
 .docs-toggle .i { width: 16px; height: 16px; color: var(--accent); }
@@ -502,7 +511,11 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   letter-spacing: -0.005em;
   transition: transform 120ms, opacity 120ms, box-shadow 120ms;
 }
-.primary-btn:hover { box-shadow: var(--shadow); }
+.primary-btn:not(:disabled):hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+.primary-btn:not(:disabled):active { transform: scale(0.97); }
 .start-count { color: var(--ink-3); font-weight: 400; font-size: 12.5px; margin: 0 4px; }
 .primary-btn { display: inline-flex; align-items: center; }
 
@@ -659,6 +672,10 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   border-radius: var(--r-lg);
   padding: var(--density-pad);
   box-shadow: var(--shadow);
+  /* During slide-nav this card transforms in/out; let the browser isolate
+     paint to its own subtree so siblings aren't repainted each frame. */
+  contain: layout paint;
+  will-change: transform;
 }
 .q-head {
   display: flex; align-items: center; gap: 10px;
@@ -698,11 +715,22 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   border: 1px solid var(--line-strong);
   background: transparent;
   color: var(--ink-2);
-  transition: background 180ms, border-color 180ms, color 180ms, transform 180ms;
+  transition: background-color 180ms, border-color 180ms, color 180ms, transform 180ms;
   cursor: pointer;
 }
-.q-flag:hover { background: var(--bg-sunken); }
-.q-flag.flagged { background: var(--warn); border-color: var(--warn); color: white; }
+.q-flag:hover { background: var(--bg-sunken); transform: scale(1.08); }
+.q-flag:active { transform: scale(0.9); }
+.q-flag.flagged {
+  background: var(--warn);
+  border-color: var(--warn);
+  color: white;
+  animation: flagPop 300ms cubic-bezier(.4,.7,.2,1);
+}
+@keyframes flagPop {
+  0%   { transform: scale(0.85); }
+  55%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
 
 .q-stem {
   font-size: var(--density-stem);
@@ -726,10 +754,15 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   padding: 14px 16px;
   transition: border-color 140ms, background 140ms, box-shadow 140ms, transform 140ms;
   position: relative;
+  will-change: transform;
 }
 .option-card:not(:disabled):hover {
   border-color: var(--ink-2);
   background: var(--bg-sunken);
+  transform: translateY(-1px);
+}
+.option-card:not(:disabled):active {
+  transform: scale(0.98);
 }
 .option-row {
   display: flex; align-items: flex-start; gap: 14px;
@@ -746,7 +779,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   font-weight: 500;
   color: var(--ink-2);
   background: var(--bg-elev);
-  transition: all 140ms;
+  transition: background-color 140ms, color 140ms, border-color 140ms;
 }
 .opt-text {
   flex: 1;
@@ -819,15 +852,31 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 }
 
 /* Per-choice rationale (explanation mode). Renders as flowing text
-   below the option label - no card chrome - so the wording can breathe
-   instead of stretching each option into a stack of boxes. */
+   below the option label - no card chrome - so the wording can breathe.
+   The grid-template-rows 0fr→1fr trick lets the height animate from
+   collapsed to natural without JS measuring height every frame. */
+.opt-rationale-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 240ms cubic-bezier(.4,.7,.2,1);
+}
+.option-card.has-rationale .opt-rationale-wrap {
+  grid-template-rows: 1fr;
+}
+.opt-rationale-inner {
+  overflow: hidden;
+  min-height: 0;
+}
 .opt-rationale {
   margin-top: 10px;
   font-size: 13.5px;
   color: var(--ink-2);
   line-height: 1.55;
   text-wrap: pretty;
+  opacity: 0;
+  transition: opacity 200ms 60ms ease;
 }
+.option-card.has-rationale .opt-rationale { opacity: 1; }
 
 .rationale-label {
   font-family: 'Geist Mono', monospace;
@@ -914,7 +963,10 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   border-left: 1px solid var(--line);
   z-index: 55;
   display: flex; flex-direction: column;
+  contain: layout paint;
+  will-change: transform;
 }
+.palette-row { content-visibility: auto; contain-intrinsic-size: 0 56px; }
 .drawer-head {
   padding: 18px 20px;
   border-bottom: 1px solid var(--line);
@@ -1130,4 +1182,15 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   .option-card { padding: 12px 12px; }
   .results-card { padding: 22px 16px; }
   .results-percent { font-size: 48px; }
+}
+
+/* Respect the user's OS-level motion preference for the CSS-driven
+   transitions and keyframes (Motion already covers its own via MotionConfig). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
