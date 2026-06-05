@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { motion, AnimatePresence, MotionConfig } from 'motion/react';
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense, memo } from 'react';
+import { LazyMotion, domAnimation, m, AnimatePresence, MotionConfig } from 'motion/react';
 import { Icon } from './icons.jsx';
 import {
   validatePack,
@@ -15,15 +15,14 @@ import {
   clearSession,
   lastAnsweredIndex,
 } from './session.js';
-import {
-  useTweaks,
-  TweaksPanel,
-  TweakSection,
-  TweakRadio,
-  TweakSelect,
-  TweakToggle,
-  TweakSlider,
-} from './tweaks-panel.jsx';
+import { useTweaks } from './tweaks-panel.jsx';
+
+// Defer the docs panel, results screen, and tweaks panel — none are needed
+// for first paint, and the docs/tweaks bundles together pull in a chunk of
+// JSX that's only ever shown on user intent.
+const DocsPanel = lazy(() => import('./docs-panel.jsx'));
+const ResultsScreen = lazy(() => import('./results-screen.jsx'));
+const AppTweaks = lazy(() => import('./app-tweaks.jsx'));
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tweakable defaults (host can persist edits to these via __edit_mode_set_keys)
@@ -41,15 +40,6 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 // ─────────────────────────────────────────────────────────────────────────────
 // Utilities
 // ─────────────────────────────────────────────────────────────────────────────
-const formatTime = (ms) => {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const pad = (n) => String(n).padStart(2, "0");
-  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
-};
-
 // Estimated time remaining: minutes-per-question × unanswered count.
 const formatRemaining = (mins) => {
   if (mins <= 0) return "0m";
@@ -197,7 +187,7 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
 
   return (
     <div className="start-wrap">
-      <motion.div
+      <m.div
         className="start-card"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -214,15 +204,13 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
         {packs.length > 0 && (
           <div className="pack-list">
             {packs.map((p) => (
-              <motion.div
+              <div
                 key={p.slug}
                 className={"pack-card" + (p.slug === selectedSlug ? " selected" : "")}
                 onClick={() => setSelectedSlug(p.slug)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedSlug(p.slug); }}}
-                animate={p.slug === selectedSlug ? { scale: [0.97, 1.015, 1] } : { scale: 1 }}
-                transition={{ duration: 0.2, ease: [0.4, 0.7, 0.2, 1] }}
               >
                 <span className="pack-code">{p.code}</span>
                 <div className="pack-info">
@@ -237,7 +225,7 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
                 >
                   <Icon.close />
                 </button>
-              </motion.div>
+              </div>
             ))}
           </div>
         )}
@@ -269,7 +257,7 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
 
         <AnimatePresence>
           {(uploadError || (uploadWarnings && uploadWarnings.length > 0)) && (
-            <motion.div
+            <m.div
               className={"upload-feedback " + (uploadError ? "error" : "warn")}
               initial={{ opacity: 0, y: -8, height: 0 }}
               animate={{ opacity: 1, y: 0, height: "auto" }}
@@ -293,7 +281,7 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
                   {uploadWarnings.length > 5 && <li>…and {uploadWarnings.length - 5} more</li>}
                 </ul>
               )}
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
 
@@ -304,81 +292,16 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
           <span className={"docs-caret" + (showDocs ? " open" : "")}>▾</span>
         </button>
 
-        <AnimatePresence initial={false}>
         {showDocs && (
-          <motion.div
-            className="docs-panel"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.24, ease: [0.4, 0.7, 0.2, 1] }}
-            style={{ overflow: "hidden" }}
-          >
-            <p className="docs-lede">
-              An exam pack is a single JSON object with a <span className="mono">questions</span> array.
-              Required fields are <strong>bold</strong>; everything else has sensible defaults.
-            </p>
-
-            {/* AI prompt — copy & paste into ChatGPT / Claude / Gemini */}
-            <div className="ai-prompt-card">
-              <div className="ai-prompt-head">
-                <div>
-                  <div className="ai-prompt-title">✨ Generate questions with AI</div>
-                  <div className="ai-prompt-sub">Copy this prompt, paste it into ChatGPT / Claude / Gemini, fill in the angle-bracket placeholders, and save the response as a <span className="mono">.json</span> file to upload here.</div>
-                </div>
-                <button className={"primary-btn small" + (copiedPrompt ? " copied" : "")} onClick={copyPrompt}>
-                  {copiedPrompt ? <><Icon.check /> Copied</> : <>Copy AI prompt</>}
-                </button>
-              </div>
-              <pre className="ai-prompt-preview mono">{AI_PROMPT}</pre>
-            </div>
-
-            <div className="docs-section-title">Top-level fields</div>
-            <table className="docs-table">
-              <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
-              <tbody>
-                <tr><td className="mono"><strong>title</strong></td><td>string</td><td>Display name of the exam.</td></tr>
-                <tr><td className="mono">code</td><td>string</td><td>Short code (e.g. <span className="mono">SAA-C03</span>). Defaults to first 3 words of title.</td></tr>
-                <tr><td className="mono">vendor</td><td>string</td><td>Issuing organization. Defaults to "Custom".</td></tr>
-                <tr><td className="mono">domains</td><td>string[]</td><td>List of subject areas. Auto-collected from questions if omitted.</td></tr>
-                <tr><td className="mono"><strong>questions</strong></td><td>object[]</td><td>At least one question required.</td></tr>
-              </tbody>
-            </table>
-
-            <div className="docs-section-title">Question fields</div>
-            <table className="docs-table">
-              <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
-              <tbody>
-                <tr><td className="mono">id</td><td>string</td><td>Unique within the pack. Auto-generated if omitted.</td></tr>
-                <tr><td className="mono"><strong>stem</strong></td><td>string</td><td>The question text.</td></tr>
-                <tr><td className="mono"><strong>options</strong></td><td>array</td><td>2+ entries. Each is <span className="mono">{`{ key, text }`}</span> — or just a string (keys auto-assigned A/B/C/D).</td></tr>
-                <tr><td className="mono"><strong>answer</strong></td><td>string or array</td><td>The <span className="mono">key</span> of the correct option (e.g. <span className="mono">"C"</span>), or an array for multi-select questions (e.g. <span className="mono">["A","D"]</span>).</td></tr>
-                <tr><td className="mono">rationale</td><td>object</td><td>Map of option key → explanation, e.g. <span className="mono">{`{ "A": "...", "B": "..." }`}</span>. Shown when Explanations mode is on.</td></tr>
-                <tr><td className="mono">explanation</td><td>string</td><td>Summary paragraph shown below the options.</td></tr>
-                <tr><td className="mono">domain</td><td>string</td><td>Topic group. Defaults to "General".</td></tr>
-                <tr><td className="mono">difficulty</td><td>string</td><td>One of <span className="mono">Easy</span>, <span className="mono">Medium</span>, <span className="mono">Hard</span>. Defaults to "Medium".</td></tr>
-              </tbody>
-            </table>
-
-            <div className="docs-section-title docs-section-title-row">
-              <span>Example</span>
-              <div className="docs-actions">
-                <button className="ghost-btn small" onClick={copyExample}>Copy</button>
-                <button className="ghost-btn small" onClick={downloadExample}>Download example.json</button>
-              </div>
-            </div>
-            <pre className="docs-code mono">{EXAMPLE_JSON}</pre>
-
-            <div className="docs-section-title">Tips</div>
-            <ul className="docs-tips">
-              <li>You can have any number of options per question — 2, 3, 4, 5+. The <span className="mono">answer</span> just has to match one option's <span className="mono">key</span>.</li>
-              <li>Provide <span className="mono">rationale</span> for <em>every</em> option, not just the correct one — wrong-answer rationale is where most learning happens.</li>
-              <li>Uploaded packs are stored in your browser's localStorage. They persist across refreshes but are private to this browser.</li>
-              <li>Need to share with someone? Send them the .json file — they can drop it in here.</li>
-            </ul>
-          </motion.div>
+          <Suspense fallback={null}>
+            <DocsPanel
+              copyExample={copyExample}
+              downloadExample={downloadExample}
+              copyPrompt={copyPrompt}
+              copiedPrompt={copiedPrompt}
+            />
+          </Suspense>
         )}
-        </AnimatePresence>
 
         <div className="start-config">
           <div className="config-field">
@@ -398,28 +321,34 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
         </div>
 
         <div className="start-actions">
-          <motion.button
+          <button
             className="primary-btn" disabled={!selected}
             onClick={() => onStart(selected, questionOrder === "shuffle", answerOrder === "shuffle")}
-            whileHover={selected ? { y: -1 } : undefined}
-            whileTap={selected ? { scale: 0.97 } : undefined}
           >
             Begin exam{selected && <> &nbsp;<span className="start-count mono">· {selected.questions.length} questions</span></>} &nbsp;→
-          </motion.button>
+          </button>
           {selected && <span className="nav-hint" style={{marginLeft: 12}}>Tip: <span className="mono">1–4</span> answer · <span className="mono">←/→</span> nav</span>}
         </div>
-      </motion.div>
+      </m.div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Option card
+// Memoized — re-renders only when its own visual state changes, not on every
+// parent render. Hover, tap, dim, and correct/incorrect pops are pure CSS;
+// the rationale reveal uses a CSS grid-rows trick (0fr ↔ 1fr) so the height
+// animates without JS-driven layout measurement per frame.
 // ─────────────────────────────────────────────────────────────────────────────
-function OptionCard({ option, isSelected, isCorrect, isPending, isMulti, locked, showRationale, rationaleText, onClick, buttonRef }) {
+const OptionCard = memo(function OptionCard({
+  optKey, optText, isSelected, isCorrect, isPending, isMulti, locked,
+  showRationale, rationaleText, onPick, registerRef,
+}) {
   const showCorrect = locked && isCorrect;
   const showIncorrect = locked && isSelected && !isCorrect;
   const isDim = locked && !showCorrect && !showIncorrect;
+  const hasRationale = showRationale && !!rationaleText;
 
   let cls = "option-card";
   if (showCorrect) cls += " is-correct";
@@ -427,42 +356,30 @@ function OptionCard({ option, isSelected, isCorrect, isPending, isMulti, locked,
   else if (isDim) cls += " is-dim";
   if (isPending) cls += " is-pending";
   if (isMulti) cls += " is-multi";
+  if (hasRationale) cls += " has-rationale";
 
   return (
-    <motion.button
-      ref={buttonRef}
+    <button
+      ref={(el) => registerRef(optKey, el)}
       className={cls}
       disabled={locked}
-      onClick={onClick}
+      onClick={() => onPick(optKey)}
       aria-pressed={isMulti ? (isPending || (locked && isSelected)) : undefined}
-      whileHover={!locked ? { y: -1, transition: { duration: 0.14 } } : undefined}
-      whileTap={!locked ? { scale: 0.98, transition: { duration: 0.08 } } : undefined}
-      animate={(showCorrect || showIncorrect) ? { scale: [0.96, 1.015, 1] } : { scale: 1, opacity: isDim ? 0.62 : 1 }}
-      transition={{ duration: (showCorrect || showIncorrect) ? 0.28 : 0.25, ease: [0.4, 0.7, 0.2, 1] }}
     >
       <div className="option-row">
-        <span className="opt-key mono">{option.key}</span>
-        <span className="opt-text">{option.text}</span>
+        <span className="opt-key mono">{optKey}</span>
+        <span className="opt-text">{optText}</span>
         {showCorrect && <span className="opt-status-icon" style={{color: "var(--good)"}}><Icon.check /></span>}
         {showIncorrect && <span className="opt-status-icon" style={{color: "var(--bad)"}}><Icon.x /></span>}
       </div>
-      <AnimatePresence initial={false}>
-        {showRationale && rationaleText && (
-          <motion.div
-            className="opt-rationale"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.24, ease: [0.4, 0.7, 0.2, 1] }}
-            style={{ overflow: "hidden" }}
-          >
-            {rationaleText}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.button>
+      <div className="opt-rationale-wrap">
+        <div className="opt-rationale-inner">
+          <div className="opt-rationale">{rationaleText}</div>
+        </div>
+      </div>
+    </button>
   );
-}
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Question card
@@ -487,13 +404,9 @@ function QuestionCard({
 
   // Which option keys are currently in the "selected" visual state, in
   // both locked and pre-lock multi.
-  const selectedKeys = (() => {
-    if (locked) {
-      if (!response) return []; // studyMode reveal with no response
-      return Array.isArray(response.selected) ? response.selected : [response.selected];
-    }
-    return pending;
-  })();
+  const selectedKeys = locked
+    ? (response ? (Array.isArray(response.selected) ? response.selected : [response.selected]) : [])
+    : pending;
   const isKeyCorrect = (key) =>
     Array.isArray(question.answer) ? question.answer.includes(key) : key === question.answer;
 
@@ -510,18 +423,32 @@ function QuestionCard({
     });
   }, [response, explanationMode]);
 
-  const togglePending = (key) => {
-    setPending((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]);
-  };
+  // Stable per-key registrar + click handler. OptionCard is memoized, so
+  // these need to keep identity across renders for memo to skip work.
+  const registerRef = useCallback((key, el) => {
+    if (el) optionRefs.current[key] = el;
+    else delete optionRefs.current[key];
+  }, []);
+
+  const lockedRef = useRef(locked);
+  const isMultiRef = useRef(isMulti);
+  const onSelectRef = useRef(onSelect);
+  lockedRef.current = locked;
+  isMultiRef.current = isMulti;
+  onSelectRef.current = onSelect;
+
+  const onPick = useCallback((key) => {
+    if (lockedRef.current) return;
+    if (isMultiRef.current) {
+      setPending((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]);
+    } else {
+      onSelectRef.current(key);
+    }
+  }, []);
+
   const submitMulti = () => {
     if (pending.length !== requiredPicks) return;
     onSelect(pending);
-  };
-
-  const handleOptionClick = (key) => {
-    if (locked) return;
-    if (isMulti) togglePending(key);
-    else onSelect(key);
   };
 
   return (
@@ -538,18 +465,14 @@ function QuestionCard({
             Select {requiredPicks}
           </span>
         )}
-        <motion.button
+        <button
           className={"q-flag" + (flagged ? " flagged" : "")}
           onClick={onToggleFlag}
           title={flagged ? "Unflag question" : "Flag for review"}
           aria-pressed={flagged}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.9 }}
-          animate={flagged ? { scale: [0.85, 1.15, 1] } : { scale: 1 }}
-          transition={{ duration: 0.3, ease: [0.4, 0.7, 0.2, 1] }}
         >
           <Icon.flag />
-        </motion.button>
+        </button>
       </div>
 
       <h2 className="q-stem">{question.stem}</h2>
@@ -558,42 +481,39 @@ function QuestionCard({
         {question.options.map((opt) => (
           <OptionCard
             key={opt.key}
-            buttonRef={(el) => { optionRefs.current[opt.key] = el; }}
-            option={{ ...opt, _correctKey: question.answer }}
+            optKey={opt.key}
+            optText={opt.text}
             isSelected={selectedKeys.includes(opt.key)}
             isCorrect={isKeyCorrect(opt.key)}
             isPending={!locked && isMulti && pending.includes(opt.key)}
             isMulti={isMulti}
             locked={locked}
             showRationale={locked && explanationMode}
-            rationaleText={question.rationale?.[opt.key]}
-            onClick={() => handleOptionClick(opt.key)}
+            rationaleText={question.rationale?.[opt.key] || ""}
+            onPick={onPick}
+            registerRef={registerRef}
           />
         ))}
       </div>
 
       <AnimatePresence>
         {isMulti && !locked && (
-          <motion.div
+          <m.div
             className="multi-submit-row"
-            layout
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2, ease: [0.4, 0.7, 0.2, 1] }}
           >
-            <motion.span layout className="multi-count mono">{pending.length} / {requiredPicks} selected</motion.span>
-            <motion.button
-              layout
+            <span className="multi-count mono">{pending.length} / {requiredPicks} selected</span>
+            <button
               className="primary-btn small"
               disabled={pending.length !== requiredPicks}
               onClick={submitMulti}
-              whileHover={pending.length === requiredPicks ? { y: -1 } : undefined}
-              whileTap={pending.length === requiredPicks ? { scale: 0.97 } : undefined}
             >
               Submit answer
-            </motion.button>
-          </motion.div>
+            </button>
+          </m.div>
         )}
       </AnimatePresence>
 
@@ -656,13 +576,13 @@ function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, curre
     <AnimatePresence>
       {open && (
         <>
-          <motion.div
+          <m.div
             className="drawer-scrim"
             onClick={onClose}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
           />
-          <motion.aside
+          <m.aside
             className="drawer"
             aria-hidden={!open}
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
@@ -693,7 +613,7 @@ function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, curre
                 ))}
               </div>
             </div>
-            <motion.div
+            <m.div
               className="drawer-list"
               initial="hidden"
               animate="visible"
@@ -701,7 +621,7 @@ function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, curre
             >
               {filtered.length === 0 && <div className="palette-empty">No questions match.</div>}
               {filtered.map((it) => (
-                <motion.button
+                <m.button
                   key={it.q.id}
                   variants={rowVariants}
                   className={"palette-row" + (it.posIdx === currentIndex ? " current" : "")}
@@ -714,106 +634,13 @@ function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, curre
                     {it.status === "correct" && <span className="palette-mark correct" title="Correct"></span>}
                     {it.status === "wrong" && <span className="palette-mark wrong" title="Wrong"></span>}
                   </span>
-                </motion.button>
+                </m.button>
               ))}
-            </motion.div>
-          </motion.aside>
+            </m.div>
+          </m.aside>
         </>
       )}
     </AnimatePresence>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Results screen
-// ─────────────────────────────────────────────────────────────────────────────
-function ResultsScreen({ pack, examQuestions, responses, flagged, elapsedMs, onReview, onRestart, onBackToStart }) {
-  const total = examQuestions.length;
-  const answered = examQuestions.filter((q) => responses[q.id]).length;
-  const correct = examQuestions.filter((q) => responses[q.id]?.correct).length;
-  const wrong = answered - correct;
-  const pct = total ? Math.round((correct / total) * 100) : 0;
-
-  const byDomain = useMemo(() => {
-    const map = {};
-    examQuestions.forEach((q) => {
-      const d = q.domain;
-      if (!map[d]) map[d] = { total: 0, correct: 0 };
-      map[d].total += 1;
-      if (responses[q.id]?.correct) map[d].correct += 1;
-    });
-    return Object.entries(map).map(([name, v]) => ({ name, ...v }));
-  }, [examQuestions, responses]);
-
-  const statItem = {
-    hidden: { opacity: 0, y: 12 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.4, 0.7, 0.2, 1] } },
-  };
-
-  return (
-    <div className="results-wrap">
-      <motion.div
-        className="results-card"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.4, 0.7, 0.2, 1] }}
-      >
-        <div className="start-eyebrow">Exam complete · {pack.code}</div>
-        <div className="results-score">
-          <motion.span
-            className="results-percent"
-            initial={{ opacity: 0, scale: 0.75 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          >{pct}%</motion.span>
-          <span className="results-fraction">{correct} / {total} correct</span>
-        </div>
-        <div style={{color: "var(--ink-2)", fontSize: 14}}>Finished in {formatTime(elapsedMs)}</div>
-
-        <motion.div
-          className="results-stats"
-          initial="hidden"
-          animate="visible"
-          transition={{ staggerChildren: 0.08, delayChildren: 0.08 }}
-        >
-          <motion.div className="stat-card" variants={statItem}>
-            <div className="stat-label">Correct</div>
-            <div className="stat-value good">{correct}</div>
-          </motion.div>
-          <motion.div className="stat-card" variants={statItem}>
-            <div className="stat-label">Incorrect</div>
-            <div className="stat-value bad">{wrong}</div>
-          </motion.div>
-          <motion.div className="stat-card" variants={statItem}>
-            <div className="stat-label">Flagged</div>
-            <div className="stat-value">{flagged.size}</div>
-          </motion.div>
-        </motion.div>
-
-        <div className="start-eyebrow" style={{marginTop: 8}}>By domain</div>
-        <div className="domain-list">
-          {byDomain.map((d) => {
-            const p = d.total ? Math.round((d.correct / d.total) * 100) : 0;
-            return (
-              <div className="domain-row" key={d.name}>
-                <span className="domain-name">{d.name}</span>
-                <div className="domain-bar"><div className="domain-bar-fill" style={{width: p + "%"}}></div></div>
-                <span className="domain-score mono">{d.correct}/{d.total} · {p}%</span>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="start-actions" style={{marginTop: 28}}>
-          <motion.button className="primary-btn" onClick={onReview}
-            whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}>Review answers &nbsp;→</motion.button>
-          <motion.button className="ghost-btn" onClick={onRestart}
-            whileTap={{ scale: 0.95 }}>Retake same set</motion.button>
-          <motion.button className="ghost-btn" onClick={onBackToStart}
-            whileTap={{ scale: 0.95 }}>Change exam</motion.button>
-        </div>
-      </motion.div>
-    </div>
   );
 }
 
@@ -1042,11 +869,11 @@ function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [mode, goNext, goPrev, currentQ, currentResponse, tweaks.theme]);
 
-  // Auto-scroll back to the top of the page whenever the question changes,
-  // so the new question stem is always in view.
+  // Reset scroll on question change. Instant rather than smooth so it doesn't
+  // race with the slide-in animation on the question card.
   useEffect(() => {
     if (mode !== "exam") return;
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo(0, 0);
   }, [currentIndex, mode]);
 
   // Swipe left/right on touch devices to navigate questions. Threshold
@@ -1125,6 +952,7 @@ function App() {
   const progressPct = total ? (answeredCount / total) * 100 : 0;
 
   return (
+    <LazyMotion features={domAnimation} strict>
     <MotionConfig reducedMotion="user">
     <div className="app-shell">
       <Topbar
@@ -1176,7 +1004,7 @@ function App() {
             <div className="exam-container">
               <div className="question-slot">
                 <AnimatePresence mode="popLayout" custom={navDirection} initial={false}>
-                  <motion.div
+                  <m.div
                     key={currentQ.id}
                     custom={navDirection}
                     variants={{
@@ -1200,7 +1028,7 @@ function App() {
                       explanationMode={!!tweaks.explanationMode}
                       studyMode={!!tweaks.studyMode}
                     />
-                  </motion.div>
+                  </m.div>
                 </AnimatePresence>
               </div>
 
@@ -1252,88 +1080,27 @@ function App() {
       )}
 
       {mode === "results" && pack && (
-        <ResultsScreen
-          pack={pack}
-          examQuestions={examQuestions}
-          responses={responses}
-          flagged={flagged}
-          elapsedMs={endedAt - startedAt}
-          onReview={reviewAnswers}
-          onRestart={restartSameSet}
-          onBackToStart={backToStart}
-        />
+        <Suspense fallback={null}>
+          <ResultsScreen
+            pack={pack}
+            examQuestions={examQuestions}
+            responses={responses}
+            flagged={flagged}
+            elapsedMs={endedAt - startedAt}
+            onReview={reviewAnswers}
+            onRestart={restartSameSet}
+            onBackToStart={backToStart}
+          />
+        </Suspense>
       )}
 
       {/* Tweaks panel (host injects toggle in toolbar) */}
-      <AppTweaks tweaks={tweaks} setTweak={setTweak} />
+      <Suspense fallback={null}>
+        <AppTweaks tweaks={tweaks} setTweak={setTweak} />
+      </Suspense>
     </div>
     </MotionConfig>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tweaks panel
-// ─────────────────────────────────────────────────────────────────────────────
-function AppTweaks({ tweaks, setTweak }) {
-  return (
-    <TweaksPanel>
-      <TweakSection label="Appearance">
-        <TweakRadio
-          label="Theme"
-          value={tweaks.theme}
-          onChange={(v) => setTweak("theme", v)}
-          options={[{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }]}
-        />
-        <TweakRadio
-          label="Density"
-          value={tweaks.density}
-          onChange={(v) => setTweak("density", v)}
-          options={[
-            { value: "compact", label: "Compact" },
-            { value: "comfortable", label: "Comfy" },
-            { value: "spacious", label: "Roomy" },
-          ]}
-        />
-        <TweakSelect
-          label="Accent"
-          value={tweaks.accent}
-          onChange={(v) => setTweak("accent", v)}
-          options={[
-            { value: "blue", label: "Indigo" },
-            { value: "teal", label: "Teal" },
-            { value: "violet", label: "Violet" },
-            { value: "orange", label: "Amber" },
-          ]}
-        />
-      </TweakSection>
-
-      <TweakSection label="Behavior">
-        <TweakToggle
-          label="Explanation mode"
-          value={!!tweaks.explanationMode}
-          onChange={(v) => setTweak("explanationMode", v)}
-        />
-        <TweakToggle
-          label="Study mode"
-          value={!!tweaks.studyMode}
-          onChange={(v) => setTweak("studyMode", v)}
-        />
-        <TweakToggle
-          label="Show time remaining"
-          value={!!tweaks.showTimer}
-          onChange={(v) => setTweak("showTimer", v)}
-        />
-        <TweakSlider
-          label="Mins per question"
-          unit="m"
-          min={1}
-          max={10}
-          step={1}
-          value={tweaks.minutesPerQuestion || 3}
-          onChange={(v) => setTweak("minutesPerQuestion", v)}
-        />
-      </TweakSection>
-    </TweaksPanel>
+    </LazyMotion>
   );
 }
 
