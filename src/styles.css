@@ -346,7 +346,6 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   background: var(--bg-sunken);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  animation: slideDown 240ms cubic-bezier(.4,.7,.2,1);
 }
 .docs-lede { margin: 0 0 16px; font-size: 13.5px; color: var(--ink-2); line-height: 1.55; }
 .docs-section-title {
@@ -527,6 +526,14 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   margin: 0 auto;
   position: relative;
 }
+
+/* Wrapper for the AnimatePresence slide between questions; positions
+   the exiting card so it doesn't push layout while sliding out. */
+.question-slot {
+  position: relative;
+  width: 100%;
+}
+.question-slot > * { width: 100%; }
 
 /* Side-of-screen Prev/Next click zones */
 .side-zone {
@@ -896,16 +903,13 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 }
 
 /* Drawer / palette */
+/* Drawer enter/exit + scrim fade are driven by Motion (AnimatePresence)
+   in PaletteDrawer; CSS only owns the base layout. */
 .drawer-scrim {
   position: fixed; inset: 0;
   background: rgba(8, 10, 14, 0.4);
   z-index: 50;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 200ms;
 }
-.drawer-scrim.open { opacity: 1; pointer-events: auto; }
-
 .drawer {
   position: fixed; top: 0; right: 0;
   width: min(420px, 92vw);
@@ -913,11 +917,8 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   background: var(--bg-elev);
   border-left: 1px solid var(--line);
   z-index: 55;
-  transform: translateX(100%);
-  transition: transform 260ms cubic-bezier(.4,.7,.2,1);
   display: flex; flex-direction: column;
 }
-.drawer.open { transform: translateX(0); }
 .drawer-head {
   padding: 18px 20px;
   border-bottom: 1px solid var(--line);

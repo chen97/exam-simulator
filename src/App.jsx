@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { motion, MotionConfig } from 'motion/react';
+import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import { Icon } from './icons.jsx';
 import {
   validatePack,
@@ -267,26 +267,35 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
           </div>
         </div>
 
-        {(uploadError || (uploadWarnings && uploadWarnings.length > 0)) && (
-          <div className={"upload-feedback " + (uploadError ? "error" : "warn")}>
-            <div className="upload-feedback-head">
-              {uploadError ? "Upload failed" : "Uploaded with warnings"}
-              <button className="upload-feedback-close" onClick={onDismissUpload} aria-label="Dismiss"><Icon.close /></button>
-            </div>
-            {uploadError && (
-              <ul>
-                {uploadError.slice(0, 8).map((e, i) => <li key={i}>{e}</li>)}
-                {uploadError.length > 8 && <li>…and {uploadError.length - 8} more</li>}
-              </ul>
-            )}
-            {!uploadError && uploadWarnings && (
-              <ul>
-                {uploadWarnings.slice(0, 5).map((w, i) => <li key={i}>{w}</li>)}
-                {uploadWarnings.length > 5 && <li>…and {uploadWarnings.length - 5} more</li>}
-              </ul>
-            )}
-          </div>
-        )}
+        <AnimatePresence>
+          {(uploadError || (uploadWarnings && uploadWarnings.length > 0)) && (
+            <motion.div
+              className={"upload-feedback " + (uploadError ? "error" : "warn")}
+              initial={{ opacity: 0, y: -8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              transition={{ duration: 0.22, ease: [0.4, 0.7, 0.2, 1] }}
+              style={{ overflow: "hidden" }}
+            >
+              <div className="upload-feedback-head">
+                {uploadError ? "Upload failed" : "Uploaded with warnings"}
+                <button className="upload-feedback-close" onClick={onDismissUpload} aria-label="Dismiss"><Icon.close /></button>
+              </div>
+              {uploadError && (
+                <ul>
+                  {uploadError.slice(0, 8).map((e, i) => <li key={i}>{e}</li>)}
+                  {uploadError.length > 8 && <li>…and {uploadError.length - 8} more</li>}
+                </ul>
+              )}
+              {!uploadError && uploadWarnings && (
+                <ul>
+                  {uploadWarnings.slice(0, 5).map((w, i) => <li key={i}>{w}</li>)}
+                  {uploadWarnings.length > 5 && <li>…and {uploadWarnings.length - 5} more</li>}
+                </ul>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Format guide */}
         <button className="docs-toggle" onClick={() => setShowDocs((v) => !v)}>
@@ -295,8 +304,16 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
           <span className={"docs-caret" + (showDocs ? " open" : "")}>▾</span>
         </button>
 
+        <AnimatePresence initial={false}>
         {showDocs && (
-          <div className="docs-panel">
+          <motion.div
+            className="docs-panel"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.24, ease: [0.4, 0.7, 0.2, 1] }}
+            style={{ overflow: "hidden" }}
+          >
             <p className="docs-lede">
               An exam pack is a single JSON object with a <span className="mono">questions</span> array.
               Required fields are <strong>bold</strong>; everything else has sensible defaults.
@@ -359,8 +376,9 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
               <li>Uploaded packs are stored in your browser's localStorage. They persist across refreshes but are private to this browser.</li>
               <li>Need to share with someone? Send them the .json file — they can drop it in here.</li>
             </ul>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         <div className="start-config">
           <div className="config-field">
@@ -496,13 +514,9 @@ function QuestionCard({
   };
 
   return (
-    <motion.article
-      key={question.id}
+    <article
       className="question-card"
       data-screen-label={`Question ${index + 1}`}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.4, 0.7, 0.2, 1] }}
     >
       <div className="q-head">
         <span className="q-num mono">Q{String(index + 1).padStart(2, "0")}</span>
@@ -547,18 +561,30 @@ function QuestionCard({
         ))}
       </div>
 
-      {isMulti && !locked && (
-        <div className="multi-submit-row">
-          <span className="multi-count mono">{pending.length} / {requiredPicks} selected</span>
-          <button
-            className="primary-btn small"
-            disabled={pending.length !== requiredPicks}
-            onClick={submitMulti}
+      <AnimatePresence>
+        {isMulti && !locked && (
+          <motion.div
+            className="multi-submit-row"
+            layout
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: [0.4, 0.7, 0.2, 1] }}
           >
-            Submit answer
-          </button>
-        </div>
-      )}
+            <motion.span layout className="multi-count mono">{pending.length} / {requiredPicks} selected</motion.span>
+            <motion.button
+              layout
+              className="primary-btn small"
+              disabled={pending.length !== requiredPicks}
+              onClick={submitMulti}
+              whileHover={pending.length === requiredPicks ? { y: -1 } : undefined}
+              whileTap={pending.length === requiredPicks ? { scale: 0.97 } : undefined}
+            >
+              Submit answer
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {locked && explanationMode && question.explanation && (
         <div className="explanation-card">
@@ -569,7 +595,7 @@ function QuestionCard({
           <p>{question.explanation}</p>
         </div>
       )}
-    </motion.article>
+    </article>
   );
 }
 
@@ -610,55 +636,80 @@ function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, curre
     });
   }, [items, search, filter]);
 
+  const rowVariants = {
+    hidden: { opacity: 0, x: 16 },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.18 } },
+  };
+
   return (
-    <>
-      <div className={"drawer-scrim" + (open ? " open" : "")} onClick={onClose}></div>
-      <aside className={"drawer" + (open ? " open" : "")} aria-hidden={!open}>
-        <div className="drawer-head">
-          <Icon.list />
-          <span className="drawer-title">Questions</span>
-          <button className="icon-btn square" onClick={onClose} aria-label="Close palette"><Icon.close /></button>
-        </div>
-        <div className="drawer-search-row">
-          <input
-            className="search-input"
-            type="search"
-            placeholder="Search questions, domains, IDs…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            className="drawer-scrim"
+            onClick={onClose}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
           />
-          <div className="filter-chips">
-            {[
-              ["all", "All"],
-              ["unanswered", "Unanswered"],
-              ["flagged", "Flagged"],
-              ["correct", "Correct"],
-              ["wrong", "Wrong"],
-            ].map(([k, l]) => (
-              <button key={k} className={"chip" + (filter === k ? " active" : "")} onClick={() => setFilter(k)}>{l}</button>
-            ))}
-          </div>
-        </div>
-        <div className="drawer-list">
-          {filtered.length === 0 && <div className="palette-empty">No questions match.</div>}
-          {filtered.map((it) => (
-            <button
-              key={it.q.id}
-              className={"palette-row" + (it.posIdx === currentIndex ? " current" : "")}
-              onClick={() => { onJump(it.posIdx); onClose(); }}
+          <motion.aside
+            className="drawer"
+            aria-hidden={!open}
+            initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+          >
+            <div className="drawer-head">
+              <Icon.list />
+              <span className="drawer-title">Questions</span>
+              <button className="icon-btn square" onClick={onClose} aria-label="Close palette"><Icon.close /></button>
+            </div>
+            <div className="drawer-search-row">
+              <input
+                className="search-input"
+                type="search"
+                placeholder="Search questions, domains, IDs…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <div className="filter-chips">
+                {[
+                  ["all", "All"],
+                  ["unanswered", "Unanswered"],
+                  ["flagged", "Flagged"],
+                  ["correct", "Correct"],
+                  ["wrong", "Wrong"],
+                ].map(([k, l]) => (
+                  <button key={k} className={"chip" + (filter === k ? " active" : "")} onClick={() => setFilter(k)}>{l}</button>
+                ))}
+              </div>
+            </div>
+            <motion.div
+              className="drawer-list"
+              initial="hidden"
+              animate="visible"
+              transition={{ staggerChildren: 0.015, delayChildren: 0.05 }}
             >
-              <span className="palette-num">{String(it.posIdx + 1).padStart(2, "0")}</span>
-              <span className="palette-stem">{it.q.stem}</span>
-              <span className="palette-marks">
-                {it.flagged && <span className="palette-mark flagged" title="Flagged"></span>}
-                {it.status === "correct" && <span className="palette-mark correct" title="Correct"></span>}
-                {it.status === "wrong" && <span className="palette-mark wrong" title="Wrong"></span>}
-              </span>
-            </button>
-          ))}
-        </div>
-      </aside>
-    </>
+              {filtered.length === 0 && <div className="palette-empty">No questions match.</div>}
+              {filtered.map((it) => (
+                <motion.button
+                  key={it.q.id}
+                  variants={rowVariants}
+                  className={"palette-row" + (it.posIdx === currentIndex ? " current" : "")}
+                  onClick={() => { onJump(it.posIdx); onClose(); }}
+                >
+                  <span className="palette-num">{String(it.posIdx + 1).padStart(2, "0")}</span>
+                  <span className="palette-stem">{it.q.stem}</span>
+                  <span className="palette-marks">
+                    {it.flagged && <span className="palette-mark flagged" title="Flagged"></span>}
+                    {it.status === "correct" && <span className="palette-mark correct" title="Correct"></span>}
+                    {it.status === "wrong" && <span className="palette-mark wrong" title="Wrong"></span>}
+                  </span>
+                </motion.button>
+              ))}
+            </motion.div>
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -890,7 +941,10 @@ function App() {
     setMode("exam");
   };
 
-  // Navigation
+  // Navigation. navDirection feeds the question-card slide animation:
+  // +1 = next/forward (slides in from the right), -1 = previous,
+  // 0 = no slide (initial load, palette jump).
+  const [navDirection, setNavDirection] = useState(0);
   const goNext = useCallback(() => {
     setCurrentIndex((i) => {
       if (i + 1 >= examQuestions.length) {
@@ -898,16 +952,25 @@ function App() {
         setMode("results");
         return i;
       }
+      setNavDirection(1);
       return i + 1;
     });
   }, [examQuestions.length]);
 
   const goPrev = useCallback(() => {
-    setCurrentIndex((i) => Math.max(0, i - 1));
+    setCurrentIndex((i) => {
+      if (i <= 0) return i;
+      setNavDirection(-1);
+      return i - 1;
+    });
   }, []);
 
   const jumpTo = (idx) => {
-    setCurrentIndex(Math.max(0, Math.min(examQuestions.length - 1, idx)));
+    setCurrentIndex((i) => {
+      const next = Math.max(0, Math.min(examQuestions.length - 1, idx));
+      setNavDirection(next > i ? 1 : next < i ? -1 : 0);
+      return next;
+    });
   };
 
   // Answer selection
@@ -1100,17 +1163,35 @@ function App() {
 
           <main className="exam-main">
             <div className="exam-container">
-              <QuestionCard
-                question={currentQ}
-                index={currentIndex}
-                total={total}
-                response={currentResponse}
-                flagged={flagged.has(currentQ.id)}
-                onSelect={handleSelect}
-                onToggleFlag={toggleFlag}
-                explanationMode={!!tweaks.explanationMode}
-                studyMode={!!tweaks.studyMode}
-              />
+              <div className="question-slot">
+                <AnimatePresence mode="popLayout" custom={navDirection} initial={false}>
+                  <motion.div
+                    key={currentQ.id}
+                    custom={navDirection}
+                    variants={{
+                      enter: (dir) => ({ opacity: 0, x: dir === 0 ? 0 : dir > 0 ? 56 : -56 }),
+                      center: { opacity: 1, x: 0 },
+                      exit:  (dir) => ({ opacity: 0, x: dir > 0 ? -56 : 56 }),
+                    }}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.28, ease: [0.4, 0.7, 0.2, 1] }}
+                  >
+                    <QuestionCard
+                      question={currentQ}
+                      index={currentIndex}
+                      total={total}
+                      response={currentResponse}
+                      flagged={flagged.has(currentQ.id)}
+                      onSelect={handleSelect}
+                      onToggleFlag={toggleFlag}
+                      explanationMode={!!tweaks.explanationMode}
+                      studyMode={!!tweaks.studyMode}
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
 
               {/* Bottom nav row (mobile only — hidden on desktop via CSS) */}
               <div className="nav-row">
