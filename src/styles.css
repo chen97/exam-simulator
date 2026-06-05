@@ -503,8 +503,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   letter-spacing: -0.005em;
   transition: transform 120ms, opacity 120ms, box-shadow 120ms;
 }
-.primary-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
-.primary-btn:active { transform: scale(0.97); box-shadow: none; }
+.primary-btn:hover { box-shadow: var(--shadow); }
 .start-count { color: var(--ink-3); font-weight: 400; font-size: 12.5px; margin: 0 4px; }
 .primary-btn { display: inline-flex; align-items: center; }
 
@@ -695,9 +694,8 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   transition: background 180ms, border-color 180ms, color 180ms, transform 180ms;
   cursor: pointer;
 }
-.q-flag:hover { background: var(--bg-sunken); transform: scale(1.08); }
-.q-flag:active { transform: scale(0.9); }
-.q-flag.flagged { background: var(--warn); border-color: var(--warn); color: white; animation: flagPop 300ms cubic-bezier(.4,.7,.2,1); }
+.q-flag:hover { background: var(--bg-sunken); }
+.q-flag.flagged { background: var(--warn); border-color: var(--warn); color: white; }
 
 .q-stem {
   font-size: var(--density-stem);
@@ -725,12 +723,6 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 .option-card:not(:disabled):hover {
   border-color: var(--ink-2);
   background: var(--bg-sunken);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow);
-}
-.option-card:not(:disabled):active {
-  transform: scale(0.98);
-  box-shadow: none;
 }
 .option-row {
   display: flex; align-items: flex-start; gap: 14px;
@@ -1075,45 +1067,11 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 /* svg icons */
 .i { width: 16px; height: 16px; display: inline-block; vertical-align: middle; }
 
-/* ── Interaction effects & entrance animations ────────────────────────── */
-
-@keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes popIn {
-  0%   { transform: scale(0.96); opacity: 0.7; }
-  60%  { transform: scale(1.015); }
-  100% { transform: scale(1); opacity: 1; }
-}
-@keyframes flagPop {
-  0%   { transform: scale(0.85); }
-  50%  { transform: scale(1.15); }
-  100% { transform: scale(1); }
-}
-@keyframes scoreIn {
-  from { opacity: 0; transform: scale(0.75); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-/* Question card entrance */
-.question-card { animation: fadeSlideUp 300ms cubic-bezier(.4,.7,.2,1); }
-
-/* Start screen card entrance */
-.start-card { animation: fadeSlideUp 400ms cubic-bezier(.4,.7,.2,1); }
-
-/* Pack card selection pop */
-.pack-card.selected { animation: popIn 200ms cubic-bezier(.4,.7,.2,1); }
-
-/* Results screen entrances */
-.results-card { animation: fadeSlideUp 400ms cubic-bezier(.4,.7,.2,1); }
-.results-percent { animation: scoreIn 500ms cubic-bezier(.16,1,.3,1); }
-.stat-card {
-  animation: fadeSlideUp 300ms cubic-bezier(.4,.7,.2,1) backwards;
-}
-.stat-card:nth-child(1) { animation-delay: 80ms; }
-.stat-card:nth-child(2) { animation-delay: 160ms; }
-.stat-card:nth-child(3) { animation-delay: 240ms; }
+/* ── Interaction effects ──────────────────────────────────────────────────
+   Entrance and pop animations are driven by Motion (`motion/react`)
+   declaratively from the React components. CSS still owns simple steady-
+   state transitions (palette row press, switch thumb squish) and the
+   slideDown/pulse keyframes used by the rationale/explanation cards. */
 
 /* Palette rows */
 .palette-row { transition: background 120ms, transform 80ms; }
@@ -1121,19 +1079,6 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 
 /* Switch toggle — squish on press */
 .switch:active::after { width: calc(var(--h) - 2px); }
-
-/* Respect user preference for reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .question-card,
-  .start-card,
-  .results-card,
-  .results-percent,
-  .stat-card,
-  .option-card.is-correct,
-  .option-card.is-incorrect,
-  .pack-card.selected,
-  .q-flag.flagged { animation: none; }
-}
 
 /* Small screens — side click-zones give way to bottom nav row */
 @media (max-width: 980px) {

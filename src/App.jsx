@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { motion, MotionConfig } from 'motion/react';
 import { Icon } from './icons.jsx';
 import {
   validatePack,
@@ -196,7 +197,12 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
 
   return (
     <div className="start-wrap">
-      <div className="start-card">
+      <motion.div
+        className="start-card"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.4, 0.7, 0.2, 1] }}
+      >
         <div className="start-eyebrow">{packs.length ? "Select an exam pack" : "Get started"}</div>
         <h1 className="start-title">{packs.length ? "Practice with focus." : "Upload an exam pack."}</h1>
         <p className="start-sub">
@@ -208,13 +214,15 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
         {packs.length > 0 && (
           <div className="pack-list">
             {packs.map((p) => (
-              <div
+              <motion.div
                 key={p.slug}
                 className={"pack-card" + (p.slug === selectedSlug ? " selected" : "")}
                 onClick={() => setSelectedSlug(p.slug)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedSlug(p.slug); }}}
+                animate={p.slug === selectedSlug ? { scale: [0.97, 1.015, 1] } : { scale: 1 }}
+                transition={{ duration: 0.2, ease: [0.4, 0.7, 0.2, 1] }}
               >
                 <span className="pack-code">{p.code}</span>
                 <div className="pack-info">
@@ -229,7 +237,7 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
                 >
                   <Icon.close />
                 </button>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}
@@ -372,12 +380,17 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
         </div>
 
         <div className="start-actions">
-          <button className="primary-btn" disabled={!selected} onClick={() => onStart(selected, questionOrder === "shuffle", answerOrder === "shuffle")}>
+          <motion.button
+            className="primary-btn" disabled={!selected}
+            onClick={() => onStart(selected, questionOrder === "shuffle", answerOrder === "shuffle")}
+            whileHover={selected ? { y: -1 } : undefined}
+            whileTap={selected ? { scale: 0.97 } : undefined}
+          >
             Begin exam{selected && <> &nbsp;<span className="start-count mono">· {selected.questions.length} questions</span></>} &nbsp;→
-          </button>
+          </motion.button>
           {selected && <span className="nav-hint" style={{marginLeft: 12}}>Tip: <span className="mono">1–4</span> answer · <span className="mono">←/→</span> nav</span>}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -398,12 +411,16 @@ function OptionCard({ option, isSelected, isCorrect, isPending, isMulti, locked,
   if (isMulti) cls += " is-multi";
 
   return (
-    <button
+    <motion.button
       ref={buttonRef}
       className={cls}
       disabled={locked}
       onClick={onClick}
       aria-pressed={isMulti ? (isPending || (locked && isSelected)) : undefined}
+      whileHover={!locked ? { y: -1, transition: { duration: 0.14 } } : undefined}
+      whileTap={!locked ? { scale: 0.98, transition: { duration: 0.08 } } : undefined}
+      animate={(showCorrect || showIncorrect) ? { scale: [0.96, 1.015, 1] } : { scale: 1, opacity: isDim ? 0.62 : 1 }}
+      transition={{ duration: (showCorrect || showIncorrect) ? 0.28 : 0.25, ease: [0.4, 0.7, 0.2, 1] }}
     >
       <div className="option-row">
         <span className="opt-key mono">{option.key}</span>
@@ -414,7 +431,7 @@ function OptionCard({ option, isSelected, isCorrect, isPending, isMulti, locked,
       {showRationale && rationaleText && (
         <div className="opt-rationale">{rationaleText}</div>
       )}
-    </button>
+    </motion.button>
   );
 }
 
@@ -479,7 +496,14 @@ function QuestionCard({
   };
 
   return (
-    <article className="question-card" data-screen-label={`Question ${index + 1}`}>
+    <motion.article
+      key={question.id}
+      className="question-card"
+      data-screen-label={`Question ${index + 1}`}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.4, 0.7, 0.2, 1] }}
+    >
       <div className="q-head">
         <span className="q-num mono">Q{String(index + 1).padStart(2, "0")}</span>
         <span className="q-tag mono">{question.domain}</span>
@@ -489,14 +513,18 @@ function QuestionCard({
             Select {requiredPicks}
           </span>
         )}
-        <button
+        <motion.button
           className={"q-flag" + (flagged ? " flagged" : "")}
           onClick={onToggleFlag}
           title={flagged ? "Unflag question" : "Flag for review"}
           aria-pressed={flagged}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.9 }}
+          animate={flagged ? { scale: [0.85, 1.15, 1] } : { scale: 1 }}
+          transition={{ duration: 0.3, ease: [0.4, 0.7, 0.2, 1] }}
         >
           <Icon.flag />
-        </button>
+        </motion.button>
       </div>
 
       <h2 className="q-stem">{question.stem}</h2>
@@ -541,7 +569,7 @@ function QuestionCard({
           <p>{question.explanation}</p>
         </div>
       )}
-    </article>
+    </motion.article>
   );
 }
 
@@ -655,30 +683,50 @@ function ResultsScreen({ pack, examQuestions, responses, flagged, elapsedMs, onR
     return Object.entries(map).map(([name, v]) => ({ name, ...v }));
   }, [examQuestions, responses]);
 
+  const statItem = {
+    hidden: { opacity: 0, y: 12 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.4, 0.7, 0.2, 1] } },
+  };
+
   return (
     <div className="results-wrap">
-      <div className="results-card">
+      <motion.div
+        className="results-card"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.4, 0.7, 0.2, 1] }}
+      >
         <div className="start-eyebrow">Exam complete · {pack.code}</div>
         <div className="results-score">
-          <span className="results-percent">{pct}%</span>
+          <motion.span
+            className="results-percent"
+            initial={{ opacity: 0, scale: 0.75 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          >{pct}%</motion.span>
           <span className="results-fraction">{correct} / {total} correct</span>
         </div>
         <div style={{color: "var(--ink-2)", fontSize: 14}}>Finished in {formatTime(elapsedMs)}</div>
 
-        <div className="results-stats">
-          <div className="stat-card">
+        <motion.div
+          className="results-stats"
+          initial="hidden"
+          animate="visible"
+          transition={{ staggerChildren: 0.08, delayChildren: 0.08 }}
+        >
+          <motion.div className="stat-card" variants={statItem}>
             <div className="stat-label">Correct</div>
             <div className="stat-value good">{correct}</div>
-          </div>
-          <div className="stat-card">
+          </motion.div>
+          <motion.div className="stat-card" variants={statItem}>
             <div className="stat-label">Incorrect</div>
             <div className="stat-value bad">{wrong}</div>
-          </div>
-          <div className="stat-card">
+          </motion.div>
+          <motion.div className="stat-card" variants={statItem}>
             <div className="stat-label">Flagged</div>
             <div className="stat-value">{flagged.size}</div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         <div className="start-eyebrow" style={{marginTop: 8}}>By domain</div>
         <div className="domain-list">
@@ -695,11 +743,14 @@ function ResultsScreen({ pack, examQuestions, responses, flagged, elapsedMs, onR
         </div>
 
         <div className="start-actions" style={{marginTop: 28}}>
-          <button className="primary-btn" onClick={onReview}>Review answers &nbsp;→</button>
-          <button className="ghost-btn" onClick={onRestart}>Retake same set</button>
-          <button className="ghost-btn" onClick={onBackToStart}>Change exam</button>
+          <motion.button className="primary-btn" onClick={onReview}
+            whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }}>Review answers &nbsp;→</motion.button>
+          <motion.button className="ghost-btn" onClick={onRestart}
+            whileTap={{ scale: 0.95 }}>Retake same set</motion.button>
+          <motion.button className="ghost-btn" onClick={onBackToStart}
+            whileTap={{ scale: 0.95 }}>Change exam</motion.button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -1000,6 +1051,7 @@ function App() {
   const progressPct = total ? (answeredCount / total) * 100 : 0;
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="app-shell">
       <Topbar
         mode={mode}
@@ -1123,6 +1175,7 @@ function App() {
       {/* Tweaks panel (host injects toggle in toolbar) */}
       <AppTweaks tweaks={tweaks} setTweak={setTweak} />
     </div>
+    </MotionConfig>
   );
 }
 
