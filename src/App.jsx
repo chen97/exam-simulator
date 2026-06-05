@@ -446,9 +446,20 @@ function OptionCard({ option, isSelected, isCorrect, isPending, isMulti, locked,
         {showCorrect && <span className="opt-status-icon" style={{color: "var(--good)"}}><Icon.check /></span>}
         {showIncorrect && <span className="opt-status-icon" style={{color: "var(--bad)"}}><Icon.x /></span>}
       </div>
-      {showRationale && rationaleText && (
-        <div className="opt-rationale">{rationaleText}</div>
-      )}
+      <AnimatePresence initial={false}>
+        {showRationale && rationaleText && (
+          <motion.div
+            className="opt-rationale"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.24, ease: [0.4, 0.7, 0.2, 1] }}
+            style={{ overflow: "hidden" }}
+          >
+            {rationaleText}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.button>
   );
 }
