@@ -818,20 +818,16 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   cursor: not-allowed;
 }
 
-/* per-choice rationale (explanation mode) */
+/* Per-choice rationale (explanation mode). Renders as flowing text
+   below the option label - no card chrome - so the wording can breathe
+   instead of stretching each option into a stack of boxes. */
 .opt-rationale {
-  margin-top: 8px;
-  padding: 8px 10px;
-  background: var(--bg-sunken);
-  border-radius: var(--r-sm);
-  border-left: 2px solid var(--line-strong);
+  margin-top: 10px;
   font-size: 13.5px;
   color: var(--ink-2);
-  line-height: 1.5;
-  animation: slideDown 220ms cubic-bezier(.4,.7,.2,1);
+  line-height: 1.55;
+  text-wrap: pretty;
 }
-.option-card.is-correct .opt-rationale { border-left-color: var(--good); }
-.option-card.is-incorrect .opt-rationale { border-left-color: var(--bad); }
 
 .rationale-label {
   font-family: 'Geist Mono', monospace;
