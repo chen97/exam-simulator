@@ -913,22 +913,40 @@ function App() {
     window.scrollTo(0, 0);
   }, [currentIndex, mode]);
 
-  // Swipe left/right on touch devices to navigate questions. Threshold
-  // (~50px) keeps taps and short drags from misfiring; the off-axis cap
-  // ignores vertical scrolls.
+  // Swipe left/right on touch devices to navigate questions. The earlier
+  // 50 px threshold misfired during reading and slow scrolls; this version
+  // requires a deliberate flick:
+  //   - >=80 px horizontal travel
+  //   - <50 px vertical drift AND |dx| > |dy| * 1.5 (clearly horizontal)
+  //   - completed in under 600 ms (excludes slow drift while reading)
+  //   - average velocity > 0.4 px/ms (~400 px/s, a real flick)
+  //   - gesture must not start on an interactive control (so picking an
+  //     option or hitting Submit can't be misread as a swipe)
   useEffect(() => {
     if (mode !== "exam") return;
-    const SWIPE_MIN = 50;
-    const SWIPE_MAX_OFF_AXIS = 80;
+    const SWIPE_MIN_DX = 80;
+    const SWIPE_MAX_DY = 50;
+    const SWIPE_AXIS_RATIO = 1.5;
+    const SWIPE_MAX_DURATION = 600;
+    const SWIPE_MIN_VELOCITY = 0.4;
+
     let startX = 0;
     let startY = 0;
+    let startT = 0;
     let active = false;
+
+    const isInteractive = (el) =>
+      !!(el && el.closest && el.closest(
+        "button, input, textarea, select, a, [role='button'], [role='switch']"
+      ));
 
     const onTouchStart = (e) => {
       if (drawerOpen) return;
       if (e.touches.length > 1) { active = false; return; }
+      if (isInteractive(e.target)) { active = false; return; }
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
+      startT = e.timeStamp || Date.now();
       active = true;
     };
     const onTouchEnd = (e) => {
@@ -936,11 +954,17 @@ function App() {
       active = false;
       const t = e.changedTouches[0];
       const dx = t.clientX - startX;
-      const dy = Math.abs(t.clientY - startY);
-      if (Math.abs(dx) >= SWIPE_MIN && dy < SWIPE_MAX_OFF_AXIS) {
-        if (dx < 0) goNext();
-        else goPrev();
-      }
+      const dy = t.clientY - startY;
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+      const duration = (e.timeStamp || Date.now()) - startT;
+      if (duration > SWIPE_MAX_DURATION) return;
+      if (adx < SWIPE_MIN_DX) return;
+      if (ady > SWIPE_MAX_DY) return;
+      if (adx < ady * SWIPE_AXIS_RATIO) return;
+      if (adx / Math.max(duration, 1) < SWIPE_MIN_VELOCITY) return;
+      if (dx < 0) goNext();
+      else goPrev();
     };
 
     document.addEventListener("touchstart", onTouchStart, { passive: true });
