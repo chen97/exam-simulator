@@ -971,47 +971,69 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 }
 
 /* Edge pill shown live during a touch swipe so the user can tell mid-
-   gesture that nav is being tracked. Opacity + transform are written
-   inline by the swipe touchmove handler at 60 fps; .is-ready is added
-   once the gesture crosses the commit threshold, snapping the pill to
-   the accent color as a "release to navigate" cue. */
+   gesture that nav is being tracked. The outer disc wears a
+   conic-gradient progress ring driven by --swipe-progress (written
+   inline by the touchmove handler, rAF-throttled). The inner pill
+   carries the icon and snaps to the accent color once the gesture
+   crosses the commit threshold, with a spring-pop animation as a
+   "release to navigate" cue. */
 .swipe-indicator {
+  --swipe-progress: 0;
   position: fixed;
   top: 50%;
-  width: 52px;
-  height: 52px;
-  display: grid; place-items: center;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
-  background: var(--bg-elev);
-  border: 1.5px solid var(--line-strong);
-  color: var(--ink-2);
-  box-shadow: var(--shadow);
+  padding: 3px;
+  display: grid; place-items: center;
+  /* Track behind the accent arc - subtle so the ring is the focal point. */
+  background:
+    conic-gradient(
+      from -90deg,
+      var(--accent) calc(var(--swipe-progress) * 360deg),
+      var(--line) calc(var(--swipe-progress) * 360deg) 360deg
+    );
   opacity: 0;
   pointer-events: none;
   z-index: 60;
   will-change: transform, opacity;
-  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+  filter: drop-shadow(0 8px 18px rgba(8, 10, 14, 0.18));
 }
 .swipe-indicator.prev {
-  left: 12px;
-  transform: translateY(-50%) translateX(-28px) scale(0.85);
+  left: 14px;
+  transform: translate3d(-28px, -50%, 0) scale(0.85);
 }
 .swipe-indicator.next {
-  right: 12px;
-  transform: translateY(-50%) translateX(28px) scale(0.85);
+  right: 14px;
+  transform: translate3d(28px, -50%, 0) scale(0.85);
 }
-.swipe-indicator.is-ready {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-fg);
+.swipe-indicator .pill-inner {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: var(--bg-elev);
+  color: var(--ink-2);
+  display: grid; place-items: center;
+  transition: background-color 220ms ease, color 220ms ease;
 }
 .swipe-indicator .i { width: 22px; height: 22px; }
+.swipe-indicator.is-ready .pill-inner {
+  background: var(--accent);
+  color: var(--accent-fg);
+  animation: pillPop 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes pillPop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
 /* Pointer-only devices (desktop with a mouse) never trigger touch
-   events, so the indicators stay invisible. Hiding them outright on
-   such devices keeps the DOM lean and avoids any rare ghost-touch
-   double-flash. */
+   events, so the indicators stay invisible. Hide them outright there
+   to keep the DOM lean and avoid any rare ghost-touch double-flash. */
 @media (hover: hover) and (pointer: fine) {
   .swipe-indicator { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .swipe-indicator.is-ready .pill-inner { animation: none; }
 }
 .drawer {
   position: fixed; top: 0; right: 0;
