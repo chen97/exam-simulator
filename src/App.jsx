@@ -920,13 +920,18 @@ function App() {
 
   // Swipe left/right on touch devices to navigate questions. The earlier
   // 50 px threshold misfired during reading and slow scrolls; this version
-  // requires a deliberate flick:
+  // requires a deliberate horizontal flick. To commit at release:
   //   - >=80 px horizontal travel
   //   - <50 px vertical drift AND |dx| > |dy| * 1.5 (clearly horizontal)
-  //   - completed in under 600 ms (excludes slow drift while reading)
-  //   - average velocity > 0.4 px/ms (~400 px/s, a real flick)
   //   - gesture must not start on an interactive control (so picking an
   //     option or hitting Submit can't be misread as a swipe)
+  // Duration / velocity gates were removed: with the live edge pill, the
+  // user already gets visual confirmation that the gesture has crossed
+  // the commit threshold (ring fills 0->1, inner snaps to accent). A
+  // deliberate slow drag that fills the ring should commit on release,
+  // not be rejected as "not a flick." If the user changes their mind,
+  // they pull the finger back below the threshold and release.
+  //
   // While the user is dragging, an edge pill (the swipe indicator) fades
   // in once the gesture clears the hint threshold and snaps to the accent
   // color when commit distance is reached, so the user can tell mid-swipe
@@ -936,13 +941,10 @@ function App() {
     const SWIPE_MIN_DX = 80;
     const SWIPE_MAX_DY = 50;
     const SWIPE_AXIS_RATIO = 1.5;
-    const SWIPE_MAX_DURATION = 600;
-    const SWIPE_MIN_VELOCITY = 0.4;
     const HINT_MIN_DX = 24;
 
     let startX = 0;
     let startY = 0;
-    let startT = 0;
     let active = false;
 
     const isInteractive = (el) =>
@@ -1005,7 +1007,6 @@ function App() {
       if (isInteractive(e.target)) { active = false; return; }
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
-      startT = e.timeStamp || Date.now();
       active = true;
     };
     const onTouchMove = (e) => {
@@ -1026,12 +1027,12 @@ function App() {
       const dy = t.clientY - startY;
       const adx = Math.abs(dx);
       const ady = Math.abs(dy);
-      const duration = (e.timeStamp || Date.now()) - startT;
-      if (duration > SWIPE_MAX_DURATION) return;
+      // Geometric gates: must be past the visual commit threshold and
+      // clearly horizontal. No duration / velocity check - the ring's
+      // fill state is the user's "this will navigate" cue.
       if (adx < SWIPE_MIN_DX) return;
       if (ady > SWIPE_MAX_DY) return;
       if (adx < ady * SWIPE_AXIS_RATIO) return;
-      if (adx / Math.max(duration, 1) < SWIPE_MIN_VELOCITY) return;
       if (dx < 0) goNext();
       else goPrev();
     };
