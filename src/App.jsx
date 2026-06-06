@@ -28,7 +28,7 @@ const AppTweaks = lazy(() => import('./app-tweaks.jsx'));
 // Tweakable defaults (host can persist edits to these via __edit_mode_set_keys)
 // ─────────────────────────────────────────────────────────────────────────────
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "theme": "light",
+  "theme": "system",
   "explanationMode": true,
   "studyMode": false,
   "density": "comfortable",
@@ -36,6 +36,14 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "showTimer": true,
   "minutesPerQuestion": 3
 }/*EDITMODE-END*/;
+
+// Resolve "system" -> "light"/"dark" by looking at the OS-level
+// prefers-color-scheme. Used both for first paint and live updates so
+// flipping iPhone night mode (or macOS dark mode) flips the app instantly.
+const systemPrefersDark = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia &&
+  window.matchMedia("(prefers-color-scheme: dark)").matches;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Utilities
@@ -651,12 +659,41 @@ function App() {
   // Tweaks-backed settings (also drive theme/density CSS vars)
   const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
 
+  // Track the OS-level color scheme so theme:"system" can follow it live
+  // (e.g. iPhone night mode kicking in flips the app instantly).
+  const [systemDark, setSystemDark] = useState(systemPrefersDark);
+  useEffect(() => {
+    if (!window.matchMedia) return;
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = (e) => setSystemDark(e.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  // "system" -> follow OS; otherwise honor the user's explicit choice.
+  const effectiveTheme =
+    tweaks.theme === "system" || !tweaks.theme
+      ? (systemDark ? "dark" : "light")
+      : tweaks.theme;
+
   // Apply CSS-affecting tweaks to <html>
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", tweaks.theme || "light");
+    document.documentElement.setAttribute("data-theme", effectiveTheme);
     document.documentElement.setAttribute("data-density", tweaks.density || "comfortable");
     document.documentElement.setAttribute("data-accent", tweaks.accent || "blue");
-  }, [tweaks.theme, tweaks.density, tweaks.accent]);
+
+    // Keep the iOS Safari toolbar / PWA status bar matching the effective
+    // theme even when the user explicitly overrides the OS preference.
+    // A no-media theme-color meta takes precedence over the media-queried
+    // ones in index.html.
+    let meta = document.querySelector('meta[name="theme-color"]:not([media])');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "theme-color";
+      document.head.appendChild(meta);
+    }
+    meta.content = effectiveTheme === "dark" ? "#0e1014" : "#f7f6f2";
+  }, [effectiveTheme, tweaks.density, tweaks.accent]);
 
   // Build pack registry: built-in packs from window.ExamPacks + uploaded customs
   const [customPacks, setCustomPacks] = useState(() => loadCustomPacks());
@@ -856,7 +893,7 @@ function App() {
       if (e.key === "ArrowRight") { e.preventDefault(); goNext(); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); goPrev(); }
       else if (e.key === "p" || e.key === "P") { setDrawerOpen((o) => !o); }
-      else if (e.key === "d" || e.key === "D") { setTweak("theme", tweaks.theme === "dark" ? "light" : "dark"); }
+      else if (e.key === "d" || e.key === "D") { setTweak("theme", effectiveTheme === "dark" ? "light" : "dark"); }
       else if (e.key === "f" || e.key === "F") { toggleFlag(); }
       else if (currentQ && !currentResponse && !Array.isArray(currentQ.answer)
                && ["1","2","3","4","5","6"].includes(e.key)) {
@@ -867,7 +904,7 @@ function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mode, goNext, goPrev, currentQ, currentResponse, tweaks.theme]);
+  }, [mode, goNext, goPrev, currentQ, currentResponse, effectiveTheme]);
 
   // Reset scroll on question change. Instant rather than smooth so it doesn't
   // race with the slide-in animation on the question card.
@@ -958,8 +995,8 @@ function App() {
       <Topbar
         mode={mode}
         pack={pack}
-        theme={tweaks.theme}
-        onToggleTheme={() => setTweak("theme", tweaks.theme === "dark" ? "light" : "dark")}
+        theme={effectiveTheme}
+        onToggleTheme={() => setTweak("theme", effectiveTheme === "dark" ? "light" : "dark")}
         explanationMode={tweaks.explanationMode}
         onToggleExplanation={() => setTweak("explanationMode", !tweaks.explanationMode)}
         studyMode={!!tweaks.studyMode}

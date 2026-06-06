@@ -17,7 +17,11 @@ function AppTweaks({ tweaks, setTweak }) {
           label="Theme"
           value={tweaks.theme}
           onChange={(v) => setTweak("theme", v)}
-          options={[{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }]}
+          options={[
+            { value: "system", label: "Auto" },
+            { value: "light", label: "Light" },
+            { value: "dark", label: "Dark" },
+          ]}
         />
         <TweakRadio
           label="Density"
