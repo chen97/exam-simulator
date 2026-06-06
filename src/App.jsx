@@ -762,6 +762,11 @@ function App() {
   const [startedAt, setStartedAt] = useState(initialSession ? initialSession.startedAt : 0);
   const [endedAt, setEndedAt] = useState(initialSession ? initialSession.endedAt : 0);
 
+  // Edge-pill indicators shown live during a touch swipe so the user can
+  // see the gesture being tracked before they release.
+  const swipePrevRef = useRef(null);
+  const swipeNextRef = useRef(null);
+
   // Estimated time remaining = unanswered × minutes-per-question.
   // Static (no ticking) — only changes when an answer is recorded.
 
@@ -922,6 +927,10 @@ function App() {
   //   - average velocity > 0.4 px/ms (~400 px/s, a real flick)
   //   - gesture must not start on an interactive control (so picking an
   //     option or hitting Submit can't be misread as a swipe)
+  // While the user is dragging, an edge pill (the swipe indicator) fades
+  // in once the gesture clears the hint threshold and snaps to the accent
+  // color when commit distance is reached, so the user can tell mid-swipe
+  // that nav is being tracked.
   useEffect(() => {
     if (mode !== "exam") return;
     const SWIPE_MIN_DX = 80;
@@ -929,6 +938,7 @@ function App() {
     const SWIPE_AXIS_RATIO = 1.5;
     const SWIPE_MAX_DURATION = 600;
     const SWIPE_MIN_VELOCITY = 0.4;
+    const HINT_MIN_DX = 24;
 
     let startX = 0;
     let startY = 0;
@@ -940,16 +950,57 @@ function App() {
         "button, input, textarea, select, a, [role='button'], [role='switch']"
       ));
 
+    const setIndicator = (el, progress, isPrev) => {
+      if (!el) return;
+      el.style.opacity = String(0.4 + 0.6 * progress);
+      const slide = (1 - progress) * 28;
+      el.style.transform =
+        `translateY(-50%) translateX(${isPrev ? -slide : slide}px) scale(${0.85 + 0.15 * progress})`;
+      el.classList.toggle("is-ready", progress >= 1);
+    };
+    const resetIndicator = (el) => {
+      if (!el) return;
+      el.style.opacity = "0";
+      el.classList.remove("is-ready");
+    };
+    const clearIndicators = () => {
+      resetIndicator(swipePrevRef.current);
+      resetIndicator(swipeNextRef.current);
+    };
+
     const onTouchStart = (e) => {
       if (drawerOpen) return;
-      if (e.touches.length > 1) { active = false; return; }
+      if (e.touches.length > 1) { active = false; clearIndicators(); return; }
       if (isInteractive(e.target)) { active = false; return; }
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       startT = e.timeStamp || Date.now();
       active = true;
     };
+    const onTouchMove = (e) => {
+      if (!active) return;
+      const t = e.touches[0];
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+      const isHorizontalIntent =
+        adx > HINT_MIN_DX && adx > ady * SWIPE_AXIS_RATIO && ady < SWIPE_MAX_DY;
+      if (!isHorizontalIntent) {
+        clearIndicators();
+        return;
+      }
+      const progress = Math.min(
+        1, (adx - HINT_MIN_DX) / Math.max(1, SWIPE_MIN_DX - HINT_MIN_DX)
+      );
+      const isPrev = dx > 0;
+      const target = isPrev ? swipePrevRef.current : swipeNextRef.current;
+      const other = isPrev ? swipeNextRef.current : swipePrevRef.current;
+      setIndicator(target, progress, isPrev);
+      resetIndicator(other);
+    };
     const onTouchEnd = (e) => {
+      clearIndicators();
       if (!active) return;
       active = false;
       const t = e.changedTouches[0];
@@ -968,10 +1019,14 @@ function App() {
     };
 
     document.addEventListener("touchstart", onTouchStart, { passive: true });
+    document.addEventListener("touchmove", onTouchMove, { passive: true });
     document.addEventListener("touchend", onTouchEnd, { passive: true });
+    document.addEventListener("touchcancel", clearIndicators, { passive: true });
     return () => {
       document.removeEventListener("touchstart", onTouchStart);
+      document.removeEventListener("touchmove", onTouchMove);
       document.removeEventListener("touchend", onTouchEnd);
+      document.removeEventListener("touchcancel", clearIndicators);
     };
   }, [mode, drawerOpen, goNext, goPrev]);
 
@@ -1137,6 +1192,18 @@ function App() {
             onJump={jumpTo}
             domains={pack.domains}
           />
+
+          {/* Edge pills shown live during a touch swipe. Styled fully
+              from CSS; their inline opacity/transform are written by the
+              swipe touchmove handler. */}
+          {currentIndex > 0 && (
+            <div ref={swipePrevRef} className="swipe-indicator prev" aria-hidden="true">
+              <Icon.arrowLeft />
+            </div>
+          )}
+          <div ref={swipeNextRef} className="swipe-indicator next" aria-hidden="true">
+            <Icon.arrowRight />
+          </div>
         </div>
       )}
 

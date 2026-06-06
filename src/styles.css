@@ -969,6 +969,50 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   background: rgba(8, 10, 14, 0.4);
   z-index: 50;
 }
+
+/* Edge pill shown live during a touch swipe so the user can tell mid-
+   gesture that nav is being tracked. Opacity + transform are written
+   inline by the swipe touchmove handler at 60 fps; .is-ready is added
+   once the gesture crosses the commit threshold, snapping the pill to
+   the accent color as a "release to navigate" cue. */
+.swipe-indicator {
+  position: fixed;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--bg-elev);
+  border: 1.5px solid var(--line-strong);
+  color: var(--ink-2);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 60;
+  will-change: transform, opacity;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+.swipe-indicator.prev {
+  left: 12px;
+  transform: translateY(-50%) translateX(-28px) scale(0.85);
+}
+.swipe-indicator.next {
+  right: 12px;
+  transform: translateY(-50%) translateX(28px) scale(0.85);
+}
+.swipe-indicator.is-ready {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+.swipe-indicator .i { width: 22px; height: 22px; }
+/* Pointer-only devices (desktop with a mouse) never trigger touch
+   events, so the indicators stay invisible. Hiding them outright on
+   such devices keeps the DOM lean and avoids any rare ghost-touch
+   double-flash. */
+@media (hover: hover) and (pointer: fine) {
+  .swipe-indicator { display: none; }
+}
 .drawer {
   position: fixed; top: 0; right: 0;
   width: min(420px, 92vw);
