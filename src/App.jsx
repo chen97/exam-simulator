@@ -952,20 +952,51 @@ function App() {
 
     const setIndicator = (el, progress, isPrev) => {
       if (!el) return;
-      el.style.opacity = String(0.4 + 0.6 * progress);
+      el.style.setProperty("--swipe-progress", String(progress));
+      el.style.opacity = String(0.55 + 0.45 * progress);
       const slide = (1 - progress) * 28;
       el.style.transform =
-        `translateY(-50%) translateX(${isPrev ? -slide : slide}px) scale(${0.85 + 0.15 * progress})`;
-      el.classList.toggle("is-ready", progress >= 1);
+        `translate3d(${isPrev ? -slide : slide}px, -50%, 0) scale(${0.85 + 0.15 * progress})`;
+      const ready = progress >= 1;
+      if (ready !== el.classList.contains("is-ready")) {
+        el.classList.toggle("is-ready", ready);
+      }
     };
     const resetIndicator = (el) => {
       if (!el) return;
       el.style.opacity = "0";
+      el.style.setProperty("--swipe-progress", "0");
       el.classList.remove("is-ready");
     };
     const clearIndicators = () => {
       resetIndicator(swipePrevRef.current);
       resetIndicator(swipeNextRef.current);
+    };
+
+    // rAF-batch touchmove so DOM updates happen at most once per frame
+    // (touchmove can fire at 120 Hz on modern iPads/iPhones; without
+    // this the style writes pile up and microstutter the slide).
+    let rafId = 0;
+    let pendingDx = 0;
+    let pendingDy = 0;
+    const flushIndicator = () => {
+      rafId = 0;
+      const adx = Math.abs(pendingDx);
+      const ady = Math.abs(pendingDy);
+      const isHorizontalIntent =
+        adx > HINT_MIN_DX && adx > ady * SWIPE_AXIS_RATIO && ady < SWIPE_MAX_DY;
+      if (!isHorizontalIntent) {
+        clearIndicators();
+        return;
+      }
+      const progress = Math.min(
+        1, (adx - HINT_MIN_DX) / Math.max(1, SWIPE_MIN_DX - HINT_MIN_DX)
+      );
+      const isPrev = pendingDx > 0;
+      const target = isPrev ? swipePrevRef.current : swipeNextRef.current;
+      const other = isPrev ? swipeNextRef.current : swipePrevRef.current;
+      setIndicator(target, progress, isPrev);
+      resetIndicator(other);
     };
 
     const onTouchStart = (e) => {
@@ -980,26 +1011,13 @@ function App() {
     const onTouchMove = (e) => {
       if (!active) return;
       const t = e.touches[0];
-      const dx = t.clientX - startX;
-      const dy = t.clientY - startY;
-      const adx = Math.abs(dx);
-      const ady = Math.abs(dy);
-      const isHorizontalIntent =
-        adx > HINT_MIN_DX && adx > ady * SWIPE_AXIS_RATIO && ady < SWIPE_MAX_DY;
-      if (!isHorizontalIntent) {
-        clearIndicators();
-        return;
-      }
-      const progress = Math.min(
-        1, (adx - HINT_MIN_DX) / Math.max(1, SWIPE_MIN_DX - HINT_MIN_DX)
-      );
-      const isPrev = dx > 0;
-      const target = isPrev ? swipePrevRef.current : swipeNextRef.current;
-      const other = isPrev ? swipeNextRef.current : swipePrevRef.current;
-      setIndicator(target, progress, isPrev);
-      resetIndicator(other);
+      pendingDx = t.clientX - startX;
+      pendingDy = t.clientY - startY;
+      if (rafId) return;
+      rafId = requestAnimationFrame(flushIndicator);
     };
     const onTouchEnd = (e) => {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
       clearIndicators();
       if (!active) return;
       active = false;
@@ -1023,6 +1041,7 @@ function App() {
     document.addEventListener("touchend", onTouchEnd, { passive: true });
     document.addEventListener("touchcancel", clearIndicators, { passive: true });
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
       document.removeEventListener("touchstart", onTouchStart);
       document.removeEventListener("touchmove", onTouchMove);
       document.removeEventListener("touchend", onTouchEnd);
@@ -1193,16 +1212,18 @@ function App() {
             domains={pack.domains}
           />
 
-          {/* Edge pills shown live during a touch swipe. Styled fully
-              from CSS; their inline opacity/transform are written by the
-              swipe touchmove handler. */}
+          {/* Edge pills shown live during a touch swipe. The outer
+              element wears a conic-gradient progress ring driven by the
+              --swipe-progress CSS var; the inner pill holds the icon
+              and snaps to the accent color once the gesture clears the
+              commit threshold. All updates from the touchmove handler. */}
           {currentIndex > 0 && (
             <div ref={swipePrevRef} className="swipe-indicator prev" aria-hidden="true">
-              <Icon.arrowLeft />
+              <div className="pill-inner"><Icon.arrowLeft /></div>
             </div>
           )}
           <div ref={swipeNextRef} className="swipe-indicator next" aria-hidden="true">
-            <Icon.arrowRight />
+            <div className="pill-inner"><Icon.arrowRight /></div>
           </div>
         </div>
       )}
