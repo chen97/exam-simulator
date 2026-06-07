@@ -554,6 +554,24 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   position: relative;
 }
 
+/* Laptop / desktop breakpoints widen the reading surface so long AWS
+   question stems and option text don't crowd the center of a roomy
+   display. Two tiers: typical laptop (>=1200px viewport) and large
+   external monitor (>=1600px). The grid track and the container max
+   bump together so the side click-zones don't shrink to nothing. */
+@media (min-width: 1200px) {
+  .exam-layout {
+    grid-template-columns: 1fr min(1000px, calc(100% - 64px)) 1fr;
+  }
+  .exam-container { max-width: 960px; }
+}
+@media (min-width: 1600px) {
+  .exam-layout {
+    grid-template-columns: 1fr min(1180px, calc(100% - 96px)) 1fr;
+  }
+  .exam-container { max-width: 1120px; }
+}
+
 /* Wrapper for the AnimatePresence slide between questions; positions
    the exiting card so it doesn't push layout while sliding out. */
 .question-slot {
