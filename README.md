@@ -1,6 +1,6 @@
 # Exam Simulator
 
-A clean, mobile-friendly multiple-choice exam simulator that runs entirely in the browser. Built with React + Vite + vanilla CSS.
+A clean, mobile-friendly multiple-choice exam simulator that runs entirely in the browser. Upload your own JSON exam packs, get per-choice rationale, swipe nav with a live commit indicator, auto theme that follows your phone's night mode. Built with React + Vite + Motion.
 
 **Live demo:** https://chen97.github.io/exam-simulator/
 
@@ -8,13 +8,17 @@ A clean, mobile-friendly multiple-choice exam simulator that runs entirely in th
 
 - **Multiple exam packs** — Upload any number of `.json` question sets. Uploaded packs persist in browser localStorage.
 - **AI prompt template** — Built-in prompt you can copy into ChatGPT / Claude / Gemini to generate exam packs in the correct schema.
-- **Light & dark mode** — Toggle in the topbar.
-- **Explanation mode** — When on, per-choice rationale and a concept summary appear after you answer.
+- **Auto / Light / Dark theme** — Defaults to Auto, which follows the OS color scheme live (iPhone night mode, macOS Sundown, etc.). Light or Dark can be picked explicitly in the tweaks panel.
+- **Explanation mode** — When on, per-choice rationale slides in below each option and a concept summary appears below the question.
+- **Study mode** — Reveals the correct answer up front without recording a response — good for flashcard-style review.
+- **Multi-select questions** — Packs can declare `answer` as an array (`["A","D"]`) for "Choose two / three" questions; the UI requires the right number of picks before submit.
+- **Swipe navigation** — On touch devices, swipe left / right between questions. A live edge pill shows the gesture being tracked and snaps to the accent color once you've crossed the commit threshold; pull the finger back to abort.
 - **Question palette** — Searchable drawer to jump to any question, filter by answered / unanswered / flagged / correct / wrong.
 - **Order controls** — Question order and answer order can each be Sequence (default) or Shuffle.
 - **Estimated time remaining** — Based on minutes-per-question × unanswered count (configurable).
+- **Session resume** — Closing and reopening the tab drops you back at your last answered question with all responses and flags intact.
 - **Keyboard shortcuts** — `1–4` answer · `←/→` nav · `F` flag · `P` palette · `D` theme
-- **Mobile-friendly** — Three responsive breakpoints, ≥40px tap targets, side click-zones collapse to bottom nav on small screens.
+- **Mobile-friendly** — Responsive from 380 px phones through 1920 px desktops, ≥40 px tap targets, side click-zones collapse to bottom nav on small screens, motion respects `prefers-reduced-motion`.
 - **Tweaks panel** — Theme, density (compact / comfy / roomy), accent color, time-per-question all adjustable in-page.
 
 ## Getting started
@@ -94,15 +98,19 @@ Open the app → "Show JSON format guide" → click "Copy AI prompt". Paste into
 
 ```
 .
-├── index.html           # Vite entry — fonts + #root + module script
-├── vite.config.js       # Vite + @vitejs/plugin-react
+├── index.html            # Vite entry — fonts + color-scheme metas + #root
+├── vite.config.js        # Vite + plugin-react + terser + manualChunks
 └── src/
-    ├── main.jsx         # mounts <App /> into #root
-    ├── App.jsx          # main React app: state machine + screens
-    ├── icons.jsx        # inline SVG icon set
-    ├── pack-loader.js   # JSON validation + localStorage persistence + AI prompt
-    ├── tweaks-panel.jsx # tweaks panel component
-    └── styles.css       # all app styles
+    ├── main.jsx          # mounts <App /> into #root
+    ├── App.jsx           # main React app: state machine + screens + swipe nav
+    ├── icons.jsx         # inline SVG icon set
+    ├── pack-loader.js    # JSON pack validation + localStorage persistence + AI prompt
+    ├── session.js        # in-progress session save/load (rIC-debounced)
+    ├── docs-panel.jsx    # JSON format guide (lazy-loaded)
+    ├── results-screen.jsx# end-of-exam score + per-domain breakdown (lazy-loaded)
+    ├── app-tweaks.jsx    # tweaks panel wrapper (lazy-loaded)
+    ├── tweaks-panel.jsx  # generic tweak controls (radio/select/toggle/slider)
+    └── styles.css        # all app styles
 ```
 
 ## License
