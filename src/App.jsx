@@ -162,9 +162,9 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
 
   const handleFiles = async (files) => {
     if (!files || files.length === 0) return;
-    for (const f of files) {
-      await onUpload(f);
-    }
+    // Pass the whole list so the handler can aggregate per-file results
+    // instead of each file overwriting the previous one's error/warning.
+    await onUpload(files);
   };
 
   const onDrop = (e) => {
@@ -245,8 +245,10 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
           onDragLeave={() => setDragOver(false)}
           onDrop={onDrop}
           onClick={() => fileInputRef.current?.click()}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInputRef.current?.click(); } }}
           role="button"
           tabIndex={0}
+          aria-label="Upload exam pack: drop a .json file here or activate to browse"
         >
           <input
             ref={fileInputRef}
@@ -393,7 +395,7 @@ const OptionCard = memo(function OptionCard({
 // Question card
 // ─────────────────────────────────────────────────────────────────────────────
 function QuestionCard({
-  question, index, total,
+  question, index,
   response, flagged, onSelect, onToggleFlag,
   explanationMode, studyMode,
 }) {
@@ -541,7 +543,7 @@ function QuestionCard({
 // ─────────────────────────────────────────────────────────────────────────────
 // Palette drawer
 // ─────────────────────────────────────────────────────────────────────────────
-function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, currentIndex, onJump, domains }) {
+function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, currentIndex, onJump }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all"); // all | unanswered | flagged | wrong | correct
 
@@ -705,31 +707,44 @@ function App() {
   const [uploadError, setUploadError] = useState(null);
   const [uploadWarnings, setUploadWarnings] = useState(null);
 
-  const handleUpload = async (file) => {
+  // Accepts one or many files and aggregates every file's result, so a
+  // failed upload in a multi-file drop isn't silently overwritten by a
+  // later file's outcome. Each file is prefixed by name when more than
+  // one was provided.
+  const handleUpload = async (files) => {
     setUploadError(null);
     setUploadWarnings(null);
-    try {
-      const text = await readFileAsText(file);
-      let parsed;
-      try { parsed = JSON.parse(text); }
-      catch (e) {
-        setUploadError([`${file.name}: invalid JSON — ${e.message}`]);
-        return;
+    const list = Array.from(files || []);
+    if (list.length === 0) return;
+    const multi = list.length > 1;
+    const allErrors = [];
+    const allWarnings = [];
+    for (const file of list) {
+      try {
+        const text = await readFileAsText(file);
+        let parsed;
+        try { parsed = JSON.parse(text); }
+        catch (e) {
+          allErrors.push(`${file.name}: invalid JSON — ${e.message}`);
+          continue;
+        }
+        const { pack, errors, warnings } = validatePack(parsed);
+        if (errors.length) {
+          allErrors.push(`${file.name}:`, ...errors);
+          continue;
+        }
+        setCustomPacks((prev) => {
+          const next = [...prev, pack];
+          saveCustomPacks(next);
+          return next;
+        });
+        warnings.forEach((w) => allWarnings.push(multi ? `${file.name}: ${w}` : w));
+      } catch (e) {
+        allErrors.push(`${file.name}: ${e.message || "could not read file"}`);
       }
-      const { pack, errors, warnings } = validatePack(parsed);
-      if (errors.length) {
-        setUploadError([`${file.name}:`, ...errors]);
-        return;
-      }
-      setCustomPacks((list) => {
-        const next = [...list, pack];
-        saveCustomPacks(next);
-        return next;
-      });
-      if (warnings.length) setUploadWarnings(warnings);
-    } catch (e) {
-      setUploadError([`${file.name}: ${e.message || "could not read file"}`]);
     }
+    if (allErrors.length) setUploadError(allErrors);
+    if (allWarnings.length) setUploadWarnings(allWarnings);
   };
 
   const handleDeleteCustom = (slug) => {
@@ -901,9 +916,8 @@ function App() {
       else if (e.key === "d" || e.key === "D") { setTweak("theme", effectiveTheme === "dark" ? "light" : "dark"); }
       else if (e.key === "f" || e.key === "F") { toggleFlag(); }
       else if (currentQ && !currentResponse && !Array.isArray(currentQ.answer)
-               && ["1","2","3","4","5","6"].includes(e.key)) {
-        const map = ["A","B","C","D","E","F"];
-        const key = map[parseInt(e.key) - 1];
+               && ["1","2","3","4","5","6","7","8","9"].includes(e.key)) {
+        const key = String.fromCharCode(64 + parseInt(e.key)); // 1->A … 9->I
         if (currentQ.options.some((o) => o.key === key)) handleSelect(key);
       }
     };
@@ -1080,12 +1094,10 @@ function App() {
 
   // Derived
   const total = examQuestions.length;
-  const answeredCount = Object.keys(responses).length;
   // Counts the remaining questions starting at the user's current position
   // (not the unanswered count) — jumping forward via the palette reduces it,
   // jumping back increases it.
   const remainingMins = Math.max(0, (total - currentIndex) * (tweaks.minutesPerQuestion || 3));
-  const progressPct = total ? (answeredCount / total) * 100 : 0;
 
   return (
     <LazyMotion features={domAnimation} strict>
@@ -1156,7 +1168,6 @@ function App() {
                     <QuestionCard
                       question={currentQ}
                       index={currentIndex}
-                      total={total}
                       response={currentResponse}
                       flagged={flagged.has(currentQ.id)}
                       onSelect={handleSelect}
@@ -1210,7 +1221,6 @@ function App() {
             flagged={flagged}
             currentIndex={currentIndex}
             onJump={jumpTo}
-            domains={pack.domains}
           />
 
           {/* Edge pills shown live during a touch swipe. The outer

@@ -651,40 +651,6 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   letter-spacing: -0.005em;
 }
 
-/* Progress strip */
-.progress-strip {
-  display: flex; align-items: center; gap: 14px;
-  margin-bottom: 28px;
-  flex-wrap: wrap;
-}
-.progress-info {
-  font-family: 'Geist Mono', monospace;
-  font-size: 12px;
-  color: var(--ink-3);
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-.progress-info .current { color: var(--ink); font-weight: 500; }
-.progress-bar {
-  flex: 1;
-  min-width: 120px;
-  height: 3px;
-  background: var(--line);
-  border-radius: 2px;
-  overflow: hidden;
-}
-.progress-fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 2px;
-  transition: width 240ms cubic-bezier(.4,.7,.2,1);
-}
-.progress-answered {
-  font-size: 11.5px;
-  color: var(--ink-3);
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
 .timer-pill {
   font-family: 'Geist Mono', monospace;
   font-size: 13px;
@@ -1275,8 +1241,6 @@ html[data-theme="dark"] .search-input {
   .start-actions .nav-hint { display: none; }
   .topbar-meta { display: none; }
   .q-tag { font-size: 10.5px; padding: 2px 7px; max-width: 130px; }
-  .progress-info { font-size: 11px; }
-  .progress-answered { font-size: 11px; }
 }
 
 @media (max-width: 380px) {
