@@ -242,9 +242,18 @@ function TweaksPanel({ title = 'Tweaks', children }) {
       if (t === '__activate_edit_mode') setOpen(true);
       else if (t === '__deactivate_edit_mode') setOpen(false);
     };
+    // In-app trigger: lets a button anywhere on the page open this panel
+    // without depending on a host editor. Listens for a 'tweaks:toggle'
+    // CustomEvent so the standalone GitHub Pages deploy can expose the
+    // settings via the topbar's sliders button.
+    const onToggle = () => setOpen((v) => !v);
     window.addEventListener('message', onMsg);
+    window.addEventListener('tweaks:toggle', onToggle);
     window.parent.postMessage({ type: '__edit_mode_available' }, '*');
-    return () => window.removeEventListener('message', onMsg);
+    return () => {
+      window.removeEventListener('message', onMsg);
+      window.removeEventListener('tweaks:toggle', onToggle);
+    };
   }, []);
 
   const dismiss = () => {
