@@ -44,6 +44,15 @@ function AppTweaks({ tweaks, setTweak }) {
             { value: "orange", label: "Amber" },
           ]}
         />
+        <TweakSlider
+          label="Font size"
+          unit="%"
+          min={85}
+          max={125}
+          step={5}
+          value={Math.round((tweaks.fontSize || 1) * 100)}
+          onChange={(v) => setTweak("fontSize", v / 100)}
+        />
       </TweakSection>
 
       <TweakSection label="Behavior">

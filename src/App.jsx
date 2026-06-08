@@ -34,7 +34,8 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "density": "comfortable",
   "accent": "blue",
   "showTimer": true,
-  "minutesPerQuestion": 3
+  "minutesPerQuestion": 3,
+  "fontSize": 1
 }/*EDITMODE-END*/;
 
 // Resolve "system" -> "light"/"dark" by looking at the OS-level
@@ -683,6 +684,11 @@ function App() {
     document.documentElement.setAttribute("data-theme", effectiveTheme);
     document.documentElement.setAttribute("data-density", tweaks.density || "comfortable");
     document.documentElement.setAttribute("data-accent", tweaks.accent || "blue");
+    // Clamp the slider value so a stale localStorage entry can't make the
+    // stem hilariously huge or microscopic. 0.85 -> 1.25 keeps option text
+    // between ~12.5 px and ~20 px on the default density.
+    const scale = Math.max(0.85, Math.min(1.25, Number(tweaks.fontSize) || 1));
+    document.documentElement.style.setProperty("--font-scale", String(scale));
 
     // Keep the iOS Safari toolbar / PWA status bar matching the effective
     // theme even when the user explicitly overrides the OS preference.
@@ -695,7 +701,7 @@ function App() {
       document.head.appendChild(meta);
     }
     meta.content = effectiveTheme === "dark" ? "#0e1014" : "#f7f6f2";
-  }, [effectiveTheme, tweaks.density, tweaks.accent]);
+  }, [effectiveTheme, tweaks.density, tweaks.accent, tweaks.fontSize]);
 
   // Build pack registry: built-in packs from window.ExamPacks + uploaded customs
   const [customPacks, setCustomPacks] = useState(() => loadCustomPacks());
