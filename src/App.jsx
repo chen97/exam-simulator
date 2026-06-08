@@ -129,6 +129,15 @@ function Topbar({
         </button>
       )}
 
+      <button
+        className="icon-btn square"
+        onClick={() => window.dispatchEvent(new CustomEvent("tweaks:toggle"))}
+        title="Settings"
+        aria-label="Open settings"
+      >
+        <Icon.sliders />
+      </button>
+
       <button className="icon-btn square" onClick={onToggleTheme} title="Toggle theme (D)" aria-label="Toggle dark mode">
         {theme === "dark" ? <Icon.sun /> : <Icon.moon />}
       </button>
