@@ -30,8 +30,11 @@
   --r-xl: 20px;
   --density-pad: 24px;
   --density-gap: 14px;
-  --density-stem: 22px;
-  --density-option: 17px;
+  --density-stem: 20px;
+  --density-option: 16px;
+  /* User-controlled multiplier on top of density. Driven by the Font size
+     slider in the tweaks panel; ranges 0.85x .. 1.25x. */
+  --font-scale: 1;
 }
 
 html[data-theme="dark"] {
@@ -63,14 +66,14 @@ html[data-theme="dark"] {
 html[data-density="compact"] {
   --density-pad: 16px;
   --density-gap: 10px;
-  --density-stem: 19px;
-  --density-option: 15px;
+  --density-stem: 18px;
+  --density-option: 14.5px;
 }
 html[data-density="spacious"] {
   --density-pad: 32px;
   --density-gap: 18px;
-  --density-stem: 25px;
-  --density-option: 18px;
+  --density-stem: 23px;
+  --density-option: 17px;
 }
 
 html[data-accent="blue"]   { --accent: oklch(0.48 0.13 250); --accent-soft: oklch(0.95 0.03 250); accent-color: oklch(0.48 0.13 250); }
@@ -731,7 +734,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 }
 
 .q-stem {
-  font-size: var(--density-stem);
+  font-size: calc(var(--density-stem) * var(--font-scale));
   line-height: 1.45;
   letter-spacing: -0.012em;
   font-weight: 500;
@@ -781,7 +784,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 }
 .opt-text {
   flex: 1;
-  font-size: var(--density-option);
+  font-size: calc(var(--density-option) * var(--font-scale));
   line-height: 1.5;
   color: var(--ink);
   padding-top: 2px;
@@ -867,7 +870,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 }
 .opt-rationale {
   margin-top: 10px;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--font-scale));
   color: var(--ink-2);
   line-height: 1.55;
   text-wrap: pretty;
@@ -903,7 +906,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 .explanation-card .rationale-label { color: var(--accent); }
 .explanation-card p {
   margin: 0;
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--font-scale));
   line-height: 1.55;
   color: var(--ink);
 }
@@ -1228,8 +1231,8 @@ html[data-theme="dark"] .search-input {
   .start-config { grid-template-columns: 1fr; }
   .exam-main { padding: 20px 14px 100px; }
   .question-card { padding: 18px; }
-  .q-stem { font-size: 19px; }
-  .opt-text { font-size: 15px; }
+  .q-stem { font-size: calc(18px * var(--font-scale)); }
+  .opt-text { font-size: calc(14.5px * var(--font-scale)); }
   .results-card { padding: 26px 22px; }
   .results-percent { font-size: 56px; }
   .results-stats { grid-template-columns: 1fr; }
