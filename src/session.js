@@ -44,6 +44,17 @@ export function saveSession(session) {
   schedule(flush);
 }
 
+// The debounce leaves a small window where the latest state exists only in
+// pendingSession. Flush synchronously when the page is being hidden or
+// unloaded so the answer picked right before closing the tab isn't lost.
+// (flush no-ops when nothing is pending, so this is free otherwise.)
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", flush);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flush();
+  });
+}
+
 export function loadSession() {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
@@ -68,6 +79,10 @@ export function loadSession() {
 }
 
 export function clearSession() {
+  // Drop any pending debounced write FIRST — otherwise a flush scheduled
+  // just before the user left the exam would fire after the removeItem
+  // below and resurrect the session they explicitly abandoned.
+  pendingSession = null;
   try {
     localStorage.removeItem(SESSION_KEY);
   } catch (e) {

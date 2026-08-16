@@ -347,7 +347,7 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
           >
             Begin exam{selected && <> &nbsp;<span className="start-count mono">· {selected.questions.length} questions</span></>} &nbsp;→
           </button>
-          {selected && <span className="nav-hint" style={{marginLeft: 12}}>Tip: <span className="mono">1–4</span> answer · <span className="mono">←/→</span> nav</span>}
+          {selected && <span className="nav-hint" style={{marginLeft: 12}}>Tip: <span className="mono">1–9</span> answer · <span className="mono">←/→</span> nav</span>}
         </div>
       </m.div>
     </div>
@@ -1204,7 +1204,7 @@ function App() {
                 </button>
               </div>
               <span className="nav-row-hint mono">
-                1–4 answer · ← → nav · F flag · P palette
+                1–9 answer · ← → nav · F flag · P palette
               </span>
             </div>
           </main>

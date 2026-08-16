@@ -246,9 +246,9 @@ OUTPUT FORMAT — return ONLY a single valid JSON object (no markdown fences, no
 }
 
 REQUIREMENTS:
-- Every question MUST have exactly 4 options keyed A, B, C, D.
-- "answer" MUST be one of "A", "B", "C", or "D" and MUST match the key of the correct option.
-- "rationale" MUST include an entry for EVERY option key (A, B, C, D) — not just the correct one. The wrong-answer rationales are where learners actually learn, so make them specific and instructive (don't just say "this is wrong").
+- Default to exactly 4 options keyed A, B, C, D. You MAY use 5 (add "E") for multi-select questions.
+- "answer" MUST match the key of the correct option (e.g. "C"). For multi-select ("Choose two/three") questions, use an array of keys instead (e.g. ["A","D"]) and make the stem state how many to choose.
+- "rationale" MUST include an entry for EVERY option key the question uses — not just the correct one. The wrong-answer rationales are where learners actually learn, so make them specific and instructive (don't just say "this is wrong").
 - "explanation" should teach the underlying concept in 2–3 sentences. Do not start with "The correct answer is…" — explain the principle instead.
 - "stem" should be self-contained and unambiguous. Avoid "all of the above" / "none of the above".
 - Vary the correct answer position across A/B/C/D — do not put the answer in the same slot every time.
