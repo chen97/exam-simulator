@@ -89,7 +89,10 @@ html[data-theme="dark"][data-accent="orange"] { --accent: oklch(0.78 0.16 50); -
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
 body {
-  font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Geist has no CJK coverage — the trailing CJK families make Chinese
+     question text render with proper platform fonts instead of the
+     browser's last-resort fallback. Harmless for Latin text. */
+  font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
   font-size: 15px;
   line-height: 1.55;
   background: var(--bg);
@@ -167,6 +170,14 @@ button { font-family: inherit; cursor: pointer; }
 .icon-btn:hover, .ghost-btn:hover { background: var(--bg-sunken); }
 .icon-btn:active, .ghost-btn:active { transform: scale(0.95); }
 .icon-btn.square { padding: 7px 9px; }
+/* Text-based language toggle sized to match the square icon buttons. */
+.icon-btn.lang-btn {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 34px;
+  justify-content: center;
+  letter-spacing: 0.02em;
+}
 
 .toggle-row {
   display: inline-flex; align-items: center; gap: 10px;

@@ -12,6 +12,7 @@ A clean, mobile-friendly multiple-choice exam simulator that runs entirely in th
 - **Explanation mode** — When on, per-choice rationale slides in below each option and a concept summary appears below the question.
 - **Study mode** — Reveals the correct answer up front without recording a response — good for flashcard-style review.
 - **Multi-select questions** — Packs can declare `answer` as an array (`["A","D"]`) for "Choose two / three" questions; the UI requires the right number of picks before submit.
+- **Bilingual packs (EN / 中文)** — `stem`, option `text`, `rationale` values, and `explanation` can each be `{ "en": "...", "zh": "..." }` instead of a plain string. When a pack provides both languages, a 中/EN switch appears in the topbar; missing translations fall back to the other language.
 - **Swipe navigation** — On touch devices, swipe left / right between questions. A live edge pill shows the gesture being tracked and snaps to the accent color once you've crossed the commit threshold; pull the finger back to abort.
 - **Question palette** — Searchable drawer to jump to any question, filter by answered / unanswered / flagged / correct / wrong.
 - **Order controls** — Question order and answer order can each be Sequence (default) or Shuffle.
@@ -73,8 +74,8 @@ Each exam pack is a single JSON file matching this schema:
 |---|---|---|
 | `title` | string | Display name of the exam |
 | `questions` | array | At least one question |
-| `questions[].stem` | string | The question text |
-| `questions[].options` | array | 2+ options; each `{ key, text }` or just a string |
+| `questions[].stem` | string or object | The question text. Bilingual: `{ "en": "...", "zh": "..." }` |
+| `questions[].options` | array | 2+ options; each `{ key, text }` or just a string. `text` may be a bilingual object |
 | `questions[].answer` | string or array | A single `key` (e.g. `"C"`) for single-answer, or an array of keys (e.g. `["A","D"]`) for multi-select ("Choose two/three") |
 
 ### Optional fields (with defaults)
@@ -87,8 +88,21 @@ Each exam pack is a single JSON file matching this schema:
 | `questions[].id` | auto-generated | Must be unique within the pack |
 | `questions[].domain` | `"General"` | Topic group |
 | `questions[].difficulty` | `"Medium"` | `Easy` / `Medium` / `Hard` |
-| `questions[].rationale` | none | `{ "A": "...", "B": "...", … }` — shown in Explanation mode |
-| `questions[].explanation` | none | Summary paragraph |
+| `questions[].rationale` | none | `{ "A": "...", "B": "...", … }` — shown in Explanation mode. Values may be bilingual objects |
+| `questions[].explanation` | none | Summary paragraph. May be a bilingual object |
+
+Bilingual example (any localized field accepts this form):
+
+```json
+{
+  "stem": { "en": "Which service stores objects?", "zh": "哪个服务用于存储对象？" },
+  "options": [
+    { "key": "A", "text": { "en": "Amazon S3", "zh": "Amazon S3（对象存储）" } },
+    { "key": "B", "text": { "en": "Amazon EC2", "zh": "Amazon EC2（计算实例）" } }
+  ],
+  "answer": "A"
+}
+```
 
 ## Generating packs with AI
 

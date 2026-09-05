@@ -3,6 +3,7 @@ import { LazyMotion, domAnimation, m, AnimatePresence, MotionConfig } from 'moti
 import { Icon } from './icons.jsx';
 import {
   validatePack,
+  locText,
   loadCustomPacks,
   saveCustomPacks,
   readFileAsText,
@@ -35,7 +36,8 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "accent": "blue",
   "showTimer": true,
   "minutesPerQuestion": 3,
-  "fontSize": 1
+  "fontSize": 1,
+  "language": "en"
 }/*EDITMODE-END*/;
 
 // Resolve "system" -> "light"/"dark" by looking at the OS-level
@@ -66,6 +68,7 @@ function Topbar({
   studyMode, onToggleStudy,
   onOpenPalette, currentIndex, total,
   showTimer, remainingMins, onRestart,
+  language, onToggleLanguage, showLanguage,
 }) {
   return (
     <header className="topbar">
@@ -126,6 +129,20 @@ function Topbar({
       {mode === "exam" && (
         <button className="icon-btn square" onClick={onOpenPalette} title="Question palette (P)" aria-label="Open question palette">
           <Icon.list />
+        </button>
+      )}
+
+      {/* Only rendered when the active pack actually provides more than one
+          language, so monolingual packs don't get a dead toggle. Shows the
+          language the click switches TO (same convention as the theme icon). */}
+      {showLanguage && (
+        <button
+          className="icon-btn square lang-btn"
+          onClick={onToggleLanguage}
+          title={language === "zh" ? "Switch to English" : "切换到中文"}
+          aria-label={language === "zh" ? "Switch to English" : "Switch to Chinese"}
+        >
+          {language === "zh" ? "EN" : "中"}
         </button>
       )}
 
@@ -407,7 +424,7 @@ const OptionCard = memo(function OptionCard({
 function QuestionCard({
   question, index,
   response, flagged, onSelect, onToggleFlag,
-  explanationMode, studyMode,
+  explanationMode, studyMode, lang,
 }) {
   const isMulti = Array.isArray(question.answer);
   const requiredPicks = isMulti ? question.answer.length : 1;
@@ -416,6 +433,7 @@ function QuestionCard({
   const locked = !!response || studyMode;
   const diffClass = "diff-" + (question.difficulty || "medium").toLowerCase();
   const optionRefs = useRef({});
+  const explanationText = locText(question.explanation, lang);
 
   // Multi-select: in-progress picks before the user submits. Reset per
   // question via the question.id key so navigating away discards them.
@@ -475,6 +493,7 @@ function QuestionCard({
     <article
       className="question-card"
       data-screen-label={`Question ${index + 1}`}
+      lang={lang === "zh" ? "zh-Hans" : "en"}
     >
       <div className="q-head">
         <span className="q-num mono">Q{String(index + 1).padStart(2, "0")}</span>
@@ -495,21 +514,21 @@ function QuestionCard({
         </button>
       </div>
 
-      <h2 className="q-stem">{question.stem}</h2>
+      <h2 className="q-stem">{locText(question.stem, lang)}</h2>
 
       <div className="options">
         {question.options.map((opt) => (
           <OptionCard
             key={opt.key}
             optKey={opt.key}
-            optText={opt.text}
+            optText={locText(opt.text, lang)}
             isSelected={selectedKeys.includes(opt.key)}
             isCorrect={isKeyCorrect(opt.key)}
             isPending={!locked && isMulti && pending.includes(opt.key)}
             isMulti={isMulti}
             locked={locked}
             showRationale={locked && explanationMode}
-            rationaleText={question.rationale?.[opt.key] || ""}
+            rationaleText={locText(question.rationale?.[opt.key], lang)}
             onPick={onPick}
             registerRef={registerRef}
           />
@@ -537,13 +556,13 @@ function QuestionCard({
         )}
       </AnimatePresence>
 
-      {locked && explanationMode && question.explanation && (
+      {locked && explanationMode && explanationText && (
         <div className="explanation-card">
           <span className="rationale-label">
             <Icon.book style={{width: 12, height: 12, marginRight: 6, verticalAlign: "-2px"}} />
             Explanation
           </span>
-          <p>{question.explanation}</p>
+          <p>{explanationText}</p>
         </div>
       )}
     </article>
@@ -553,7 +572,7 @@ function QuestionCard({
 // ─────────────────────────────────────────────────────────────────────────────
 // Palette drawer
 // ─────────────────────────────────────────────────────────────────────────────
-function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, currentIndex, onJump }) {
+function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, currentIndex, onJump, lang }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all"); // all | unanswered | flagged | wrong | correct
 
@@ -567,6 +586,11 @@ function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, curre
         q,
         status: resp ? (resp.correct ? "correct" : "wrong") : "unanswered",
         flagged: flagged.has(q.id),
+        // Search across every language the stem provides, not just the one
+        // currently displayed, so an English query still finds a question
+        // while the UI is in Chinese (and vice versa).
+        searchText: [locText(q.stem, "en"), locText(q.stem, "zh"), q.domain, q.id]
+          .join(" ").toLowerCase(),
       };
     });
   }, [examQuestions, responses, flagged]);
@@ -579,11 +603,7 @@ function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, curre
       if (filter === "wrong" && it.status !== "wrong") return false;
       if (filter === "correct" && it.status !== "correct") return false;
       if (!s) return true;
-      return (
-        it.q.stem.toLowerCase().includes(s) ||
-        it.q.domain.toLowerCase().includes(s) ||
-        it.q.id.toLowerCase().includes(s)
-      );
+      return it.searchText.includes(s);
     });
   }, [items, search, filter]);
 
@@ -648,7 +668,7 @@ function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, curre
                   onClick={() => { onJump(it.posIdx); onClose(); }}
                 >
                   <span className="palette-num">{String(it.posIdx + 1).padStart(2, "0")}</span>
-                  <span className="palette-stem">{it.q.stem}</span>
+                  <span className="palette-stem">{locText(it.q.stem, lang)}</span>
                   <span className="palette-marks">
                     {it.flagged && <span className="palette-mark flagged" title="Flagged"></span>}
                     {it.status === "correct" && <span className="palette-mark correct" title="Correct"></span>}
@@ -1114,6 +1134,12 @@ function App() {
   // jumping back increases it.
   const remainingMins = Math.max(0, (total - currentIndex) * (tweaks.minutesPerQuestion || 3));
 
+  // Content language for pack-provided text (stems/options/rationale/
+  // explanation). Only meaningful when the pack ships both languages;
+  // locText falls back to whatever the pack has otherwise.
+  const lang = tweaks.language === "zh" ? "zh" : "en";
+  const packIsBilingual = (pack?.languages?.length || 0) > 1;
+
   return (
     <LazyMotion features={domAnimation} strict>
     <MotionConfig reducedMotion="user">
@@ -1133,6 +1159,9 @@ function App() {
         showTimer={!!tweaks.showTimer}
         remainingMins={remainingMins}
         onRestart={mode === "results" ? restartSameSet : backToStart}
+        language={lang}
+        onToggleLanguage={() => setTweak("language", lang === "zh" ? "en" : "zh")}
+        showLanguage={mode !== "start" && packIsBilingual}
       />
 
       {mode === "start" && (
@@ -1189,6 +1218,7 @@ function App() {
                       onToggleFlag={toggleFlag}
                       explanationMode={!!tweaks.explanationMode}
                       studyMode={!!tweaks.studyMode}
+                      lang={lang}
                     />
                   </m.div>
                 </AnimatePresence>
@@ -1236,6 +1266,7 @@ function App() {
             flagged={flagged}
             currentIndex={currentIndex}
             onJump={jumpTo}
+            lang={lang}
           />
 
           {/* Edge pills shown live during a touch swipe. The outer

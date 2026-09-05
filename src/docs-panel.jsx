@@ -49,11 +49,11 @@ function DocsPanel({ copyExample, downloadExample, copyPrompt, copiedPrompt }) {
         <thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead>
         <tbody>
           <tr><td className="mono">id</td><td>string</td><td>Unique within the pack. Auto-generated if omitted.</td></tr>
-          <tr><td className="mono"><strong>stem</strong></td><td>string</td><td>The question text.</td></tr>
-          <tr><td className="mono"><strong>options</strong></td><td>array</td><td>2+ entries. Each is <span className="mono">{`{ key, text }`}</span> — or just a string (keys auto-assigned A/B/C/D).</td></tr>
+          <tr><td className="mono"><strong>stem</strong></td><td>string or object</td><td>The question text. For bilingual packs use <span className="mono">{`{ "en": "...", "zh": "..." }`}</span> — a language switch appears in the topbar.</td></tr>
+          <tr><td className="mono"><strong>options</strong></td><td>array</td><td>2+ entries. Each is <span className="mono">{`{ key, text }`}</span> — or just a string (keys auto-assigned A/B/C/D). <span className="mono">text</span> may also be a bilingual <span className="mono">{`{ "en", "zh" }`}</span> object.</td></tr>
           <tr><td className="mono"><strong>answer</strong></td><td>string or array</td><td>The <span className="mono">key</span> of the correct option (e.g. <span className="mono">"C"</span>), or an array for multi-select questions (e.g. <span className="mono">["A","D"]</span>).</td></tr>
-          <tr><td className="mono">rationale</td><td>object</td><td>Map of option key → explanation, e.g. <span className="mono">{`{ "A": "...", "B": "..." }`}</span>. Shown when Explanations mode is on.</td></tr>
-          <tr><td className="mono">explanation</td><td>string</td><td>Summary paragraph shown below the options.</td></tr>
+          <tr><td className="mono">rationale</td><td>object</td><td>Map of option key → explanation, e.g. <span className="mono">{`{ "A": "...", "B": "..." }`}</span>. Each value may also be a bilingual object. Shown when Explanations mode is on.</td></tr>
+          <tr><td className="mono">explanation</td><td>string or object</td><td>Summary paragraph shown below the options. May be a bilingual <span className="mono">{`{ "en", "zh" }`}</span> object.</td></tr>
           <tr><td className="mono">domain</td><td>string</td><td>Topic group. Defaults to "General".</td></tr>
           <tr><td className="mono">difficulty</td><td>string</td><td>One of <span className="mono">Easy</span>, <span className="mono">Medium</span>, <span className="mono">Hard</span>. Defaults to "Medium".</td></tr>
         </tbody>
@@ -71,6 +71,7 @@ function DocsPanel({ copyExample, downloadExample, copyPrompt, copiedPrompt }) {
       <div className="docs-section-title">Tips</div>
       <ul className="docs-tips">
         <li>You can have any number of options per question — 2, 3, 4, 5+. The <span className="mono">answer</span> just has to match one option's <span className="mono">key</span>.</li>
+        <li>Bilingual packs: provide <span className="mono">{`{ "en": "...", "zh": "..." }`}</span> objects for <span className="mono">stem</span>, option <span className="mono">text</span>, <span className="mono">rationale</span> values, and <span className="mono">explanation</span>. A 中/EN switch appears in the topbar during the exam; missing translations fall back to the other language.</li>
         <li>Provide <span className="mono">rationale</span> for <em>every</em> option, not just the correct one — wrong-answer rationale is where most learning happens.</li>
         <li>Uploaded packs are stored in your browser's localStorage. They persist across refreshes but are private to this browser.</li>
         <li>Need to share with someone? Send them the .json file — they can drop it in here.</li>

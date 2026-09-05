@@ -56,6 +56,15 @@ function AppTweaks({ tweaks, setTweak }) {
       </TweakSection>
 
       <TweakSection label="Behavior">
+        <TweakRadio
+          label="Language"
+          value={tweaks.language === "zh" ? "zh" : "en"}
+          onChange={(v) => setTweak("language", v)}
+          options={[
+            { value: "en", label: "English" },
+            { value: "zh", label: "中文" },
+          ]}
+        />
         <TweakToggle
           label="Explanation mode"
           value={!!tweaks.explanationMode}
