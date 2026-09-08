@@ -3,6 +3,7 @@ import { LazyMotion, domAnimation, m, AnimatePresence, MotionConfig } from 'moti
 import { Icon } from './icons.jsx';
 import {
   validatePack,
+  prepareQuestion,
   locText,
   loadCustomPacks,
   saveCustomPacks,
@@ -868,6 +869,7 @@ function App() {
     const multi = list.length > 1;
     const allErrors = [];
     const allWarnings = [];
+    const accepted = [];
     for (const file of list) {
       try {
         const text = await readFileAsText(file);
@@ -882,14 +884,22 @@ function App() {
           allErrors.push(`${file.name}:`, ...errors);
           continue;
         }
-        setCustomPacks((prev) => {
-          const next = [...prev, pack];
-          saveCustomPacks(next);
-          return next;
-        });
+        accepted.push(pack);
         warnings.forEach((w) => allWarnings.push(multi ? `${file.name}: ${w}` : w));
       } catch (e) {
         allErrors.push(`${file.name}: ${e.message || "could not read file"}`);
+      }
+    }
+    // One write for the whole drop, and the result is checked: a pack that
+    // only makes it into React state looks fine until the next reload.
+    if (accepted.length) {
+      const next = [...customPacks, ...accepted];
+      setCustomPacks(next);
+      if (!saveCustomPacks(next)) {
+        allErrors.push(
+          "Your browser's storage is full, so this pack can't be saved — it will disappear when you reload, and exams in it can't be resumed.",
+          "Delete a pack you've finished and upload again. Safari on iPhone allows only about 5 MB per site, so load the smaller category packs there rather than one combined pack."
+        );
       }
     }
     if (allErrors.length) setUploadError(allErrors);
@@ -910,7 +920,9 @@ function App() {
   // is offered through ResumeModal, so reopening the tab doesn't drop you back
   // into an exam you meant to leave. State stays clean until Continue is
   // chosen; the stored session is left untouched in the meantime.
-  const initialSession = useMemo(() => loadSession(), []);
+  // Rebuilt against the pack registry as it stands on first render — a stored
+  // session only holds a pack reference plus the option ordering.
+  const initialSession = useMemo(() => loadSession(packs), []); // eslint-disable-line
   const [resumable, setResumable] = useState(initialSession);
   const [resumePromptOpen, setResumePromptOpen] = useState(!!initialSession);
 
@@ -973,35 +985,18 @@ function App() {
         [qs[i], qs[j]] = [qs[j], qs[i]];
       }
     }
-    // 2. Per-question option shuffle + key remap
+    // 2. Per-question option order, then re-key to display positions.
+    // prepareQuestion is shared with session resume so a resumed exam shows
+    // options in exactly the order the answers were recorded against.
     const prepared = qs.map((q) => {
-      let opts = q.options.map((o) => ({ ...o }));
-      if (shuffleAnswers && opts.length > 1) {
-        for (let i = opts.length - 1; i > 0; i--) {
+      const keys = q.options.map((o) => o.key);
+      if (shuffleAnswers && keys.length > 1) {
+        for (let i = keys.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [opts[i], opts[j]] = [opts[j], opts[i]];
+          [keys[i], keys[j]] = [keys[j], keys[i]];
         }
       }
-      // Remap keys to A/B/C/D… in display order; track original key per option
-      const remapped = opts.map((o, idx) => {
-        const newKey = String.fromCharCode(65 + idx);
-        return { key: newKey, text: o.text, _origKey: o.key };
-      });
-      const keyFor = (orig) => remapped.find((o) => o._origKey === orig)?.key || orig;
-      const newAnswer = Array.isArray(q.answer) ? q.answer.map(keyFor) : keyFor(q.answer);
-      let newRationale = null;
-      if (q.rationale) {
-        newRationale = {};
-        for (const o of remapped) {
-          if (q.rationale[o._origKey] != null) newRationale[o.key] = q.rationale[o._origKey];
-        }
-      }
-      return {
-        ...q,
-        options: remapped.map(({ key, text }) => ({ key, text })),
-        answer: newAnswer,
-        rationale: newRationale,
-      };
+      return prepareQuestion(q, keys);
     });
 
     setPack(selectedPack);

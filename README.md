@@ -6,7 +6,7 @@ A clean, mobile-friendly multiple-choice exam simulator that runs entirely in th
 
 ## Features
 
-- **Multiple exam packs** — Upload any number of `.json` question sets. Uploaded packs persist in browser localStorage.
+- **Multiple exam packs** — Upload any number of `.json` question sets. Uploaded packs persist in browser localStorage (Safari allows roughly 5 MB per site; if an upload would exceed it you get an explicit error instead of a pack that silently vanishes on reload).
 - **AI prompt template** — Built-in prompt you can copy into ChatGPT / Claude / Gemini to generate exam packs in the correct schema.
 - **Auto / Light / Dark theme** — Defaults to Auto, which follows the OS color scheme live (iPhone night mode, macOS Sundown, etc.). Light or Dark can be picked explicitly in the tweaks panel.
 - **Explanation mode** — When on, per-choice rationale slides in below each option and a concept summary appears below the question.

@@ -218,11 +218,17 @@ function loadCustomPacks() {
   }
 }
 
+// Returns false when the write failed — almost always a full quota (Safari
+// allows roughly 5 MB per site, and a large bilingual pack is close to 1 MB).
+// The caller has to surface that: a pack that only lives in React state looks
+// uploaded but disappears on the next reload.
 function saveCustomPacks(packs) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(packs));
+    return true;
   } catch (e) {
     console.warn("Failed to save custom packs:", e);
+    return false;
   }
 }
 
@@ -322,8 +328,39 @@ REQUIREMENTS:
 
 Return the JSON object now.`;
 
+// Present a question with its options in `origKeys` order, re-keyed to
+// A/B/C/D… by display position. `answer` and `rationale` are remapped to the
+// new keys, and each option remembers the key it came from so the exact
+// ordering can be recorded and reproduced later.
+//
+// Both the "start exam" path and the session-resume path go through here —
+// a resumed exam has to show options in the same order the answers were
+// recorded against, so these two must never drift apart.
+function prepareQuestion(q, origKeys) {
+  const byKey = new Map(q.options.map((o) => [o.key, o]));
+  const options = [];
+  for (let i = 0; i < origKeys.length; i++) {
+    const src = byKey.get(origKeys[i]);
+    if (!src) return null; // ordering doesn't match this question's options
+    options.push({ key: String.fromCharCode(65 + i), text: src.text, _origKey: origKeys[i] });
+  }
+  if (options.length !== q.options.length) return null;
+
+  const keyFor = (orig) => options.find((o) => o._origKey === orig)?.key || orig;
+  const answer = Array.isArray(q.answer) ? q.answer.map(keyFor) : keyFor(q.answer);
+  let rationale = null;
+  if (q.rationale) {
+    rationale = {};
+    for (const o of options) {
+      if (q.rationale[o._origKey] != null) rationale[o.key] = q.rationale[o._origKey];
+    }
+  }
+  return { ...q, options, answer, rationale };
+}
+
 export {
   validatePack,
+  prepareQuestion,
   locText,
   loadCustomPacks,
   saveCustomPacks,
