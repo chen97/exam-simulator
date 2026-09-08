@@ -171,13 +171,15 @@ function Topbar({
 // ─────────────────────────────────────────────────────────────────────────────
 // Start screen
 // ─────────────────────────────────────────────────────────────────────────────
-function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, uploadWarnings, onDismissUpload }) {
+function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, uploadWarnings, onDismissUpload, resumable, onResume, onDiscardResume }) {
   const [selectedSlug, setSelectedSlug] = useState(packs[0]?.slug || null);
   const selected = packs.find((p) => p.slug === selectedSlug);
   const [questionOrder, setQuestionOrder] = useState("sequence");
   const [answerOrder, setAnswerOrder] = useState("sequence");
   const [showDocs, setShowDocs] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  // Discard is the one irreversible action here, so it asks once.
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const fileInputRef = useRef(null);
 
   // Auto-select newest pack after upload
@@ -235,6 +237,34 @@ function StartScreen({ packs, onStart, onUpload, onDeleteCustom, uploadError, up
             ? <>Choose a pack to begin — or upload a new <span className="mono" style={{fontSize:"0.9em"}}>.json</span> question set below.</>
             : <>Drop a <span className="mono" style={{fontSize:"0.9em"}}>.json</span> file containing your questions and answers to begin. See the format guide below for the schema.</>}
         </p>
+
+        {/* Kept visible after the resume modal is dismissed, so an
+            in-progress exam is never more than one tap away. */}
+        {resumable && (
+          <div className="resume-bar">
+            <div className="resume-bar-text">
+              <div className="resume-bar-title">
+                {resumable.mode === "results" ? "Unfinished review" : "Exam in progress"}
+                {" · "}{resumable.pack?.title}
+              </div>
+              <div className="resume-bar-meta mono">
+                {Object.keys(resumable.responses || {}).length} of {resumable.examQuestions.length} answered
+              </div>
+            </div>
+            <div className="resume-bar-actions">
+              <button className="primary-btn small" onClick={onResume}>Resume</button>
+              {confirmDiscard ? (
+                <button className="ghost-btn small danger" onClick={onDiscardResume}>
+                  Discard for good?
+                </button>
+              ) : (
+                <button className="ghost-btn small" onClick={() => setConfirmDiscard(true)}>
+                  Discard
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {packs.length > 0 && (
           <div className="pack-list">
@@ -685,6 +715,90 @@ function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, curre
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Resume prompt
+// ─────────────────────────────────────────────────────────────────────────────
+// Shown on load when a previous session is still in localStorage. The app used
+// to drop straight back into the exam, which is disorienting if you closed the
+// tab on purpose and came back to pick a different pack. Dismissing is
+// deliberately non-destructive: the session stays in storage and the start
+// screen keeps offering it, so a stray tap here can't wipe someone's progress.
+function ResumeModal({ session, onResume, onDismiss }) {
+  const primaryRef = useRef(null);
+
+  useEffect(() => {
+    if (!session) return;
+    primaryRef.current?.focus();
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); onDismiss(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [session, onDismiss]);
+
+  const total = session?.examQuestions?.length || 0;
+  const answered = session ? Object.keys(session.responses || {}).length : 0;
+  const finished = session?.mode === "results";
+  const position = session && !finished
+    ? Math.min(total, lastAnsweredIndex(session.examQuestions, session.responses) + 1)
+    : total;
+  const pct = total ? Math.round((100 * answered) / total) : 0;
+
+  return (
+    <AnimatePresence>
+      {session && (
+        <>
+          <m.div
+            className="drawer-scrim"
+            onClick={onDismiss}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          />
+          {/* The wrapper owns centering AND the animation — Motion writes
+              transform inline, so the card can't also be centred with one. */}
+          <m.div
+            className="resume-modal-wrap"
+            initial={{ opacity: 0, y: 16, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+            transition={{ duration: 0.24, ease: [0.4, 0.7, 0.2, 1] }}
+          >
+          <div
+            className="resume-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="resume-title"
+          >
+            <div className="start-eyebrow">{finished ? "Unfinished review" : "Exam in progress"}</div>
+            <h2 className="resume-title" id="resume-title">Pick up where you left off?</h2>
+            <p className="resume-sub">
+              {finished
+                ? <>You finished <strong>{session.pack?.title}</strong> but hadn't left the results screen yet.</>
+                : <>You were on question <strong>{position}</strong> of <strong>{total}</strong> in <strong>{session.pack?.title}</strong>.</>}
+            </p>
+
+            <div className="resume-meter" aria-hidden="true">
+              <div className="resume-meter-fill" style={{ width: `${pct}%` }} />
+            </div>
+            <div className="resume-meta mono">{answered} of {total} answered · {pct}%</div>
+
+            <div className="resume-actions">
+              <button ref={primaryRef} className="primary-btn" onClick={onResume}>
+                {finished ? "Back to results" : "Continue exam"} &nbsp;→
+              </button>
+              <button className="ghost-btn" onClick={onDismiss}>
+                Home — choose another pack
+              </button>
+            </div>
+            <p className="resume-note">Your progress is kept either way; you can resume it from the home screen.</p>
+          </div>
+          </m.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main App
 // ─────────────────────────────────────────────────────────────────────────────
 function App() {
@@ -792,25 +906,54 @@ function App() {
 
   const dismissUpload = () => { setUploadError(null); setUploadWarnings(null); };
 
-  // App state machine — seeded from any persisted session so closing and
-  // reopening the tab resumes where the user left off. Per spec, the
-  // initial question on resume is the last one with a recorded answer.
+  // App state machine. A persisted session is NOT applied automatically — it
+  // is offered through ResumeModal, so reopening the tab doesn't drop you back
+  // into an exam you meant to leave. State stays clean until Continue is
+  // chosen; the stored session is left untouched in the meantime.
   const initialSession = useMemo(() => loadSession(), []);
-  const initialIndex = initialSession
-    ? (initialSession.mode === "exam"
-        ? lastAnsweredIndex(initialSession.examQuestions, initialSession.responses)
-        : initialSession.currentIndex)
-    : 0;
+  const [resumable, setResumable] = useState(initialSession);
+  const [resumePromptOpen, setResumePromptOpen] = useState(!!initialSession);
 
-  const [mode, setMode] = useState(initialSession ? initialSession.mode : "start");
-  const [pack, setPack] = useState(initialSession ? initialSession.pack : null);
-  const [examQuestions, setExamQuestions] = useState(initialSession ? initialSession.examQuestions : []);
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const [responses, setResponses] = useState(initialSession ? initialSession.responses : {});
-  const [flagged, setFlagged] = useState(initialSession ? initialSession.flagged : new Set());
+  const [mode, setMode] = useState("start");
+  const [pack, setPack] = useState(null);
+  const [examQuestions, setExamQuestions] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [responses, setResponses] = useState({});
+  const [flagged, setFlagged] = useState(new Set());
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [startedAt, setStartedAt] = useState(initialSession ? initialSession.startedAt : 0);
-  const [endedAt, setEndedAt] = useState(initialSession ? initialSession.endedAt : 0);
+  const [startedAt, setStartedAt] = useState(0);
+  const [endedAt, setEndedAt] = useState(0);
+
+  // Apply a stored session. Resuming an exam lands on the last question that
+  // has a recorded answer; resuming results keeps the saved position.
+  const resumeSession = useCallback(() => {
+    setResumable((s) => {
+      if (!s) return null;
+      setPack(s.pack);
+      setExamQuestions(s.examQuestions);
+      setResponses(s.responses);
+      setFlagged(s.flagged);
+      setCurrentIndex(
+        s.mode === "exam" ? lastAnsweredIndex(s.examQuestions, s.responses) : s.currentIndex
+      );
+      setStartedAt(s.startedAt);
+      setEndedAt(s.endedAt);
+      setMode(s.mode);
+      setResumePromptOpen(false);
+      return null;
+    });
+  }, []);
+
+  // Closing the prompt keeps the session — the home screen goes on offering
+  // it — so dismissing by mistake can't cost anyone their progress.
+  const dismissResumePrompt = useCallback(() => setResumePromptOpen(false), []);
+
+  // The only path that actually throws the saved session away.
+  const discardResumable = useCallback(() => {
+    clearSession();
+    setResumable(null);
+    setResumePromptOpen(false);
+  }, []);
 
   // Edge-pill indicators shown live during a touch swipe so the user can
   // see the gesture being tracked before they release.
@@ -869,6 +1012,10 @@ function App() {
     setStartedAt(Date.now());
     setEndedAt(0);
     setMode("exam");
+    // Beginning a new exam supersedes any offer to resume the old one — the
+    // save effect is about to overwrite it in storage anyway.
+    setResumable(null);
+    setResumePromptOpen(false);
   };
 
   // Navigation. navDirection feeds the question-card slide animation:
@@ -1173,6 +1320,9 @@ function App() {
           uploadError={uploadError}
           uploadWarnings={uploadWarnings}
           onDismissUpload={dismissUpload}
+          resumable={resumable}
+          onResume={resumeSession}
+          onDiscardResume={discardResumable}
         />
       )}
 
@@ -1299,6 +1449,13 @@ function App() {
           />
         </Suspense>
       )}
+
+      {/* Offered on load when a previous session is still stored. */}
+      <ResumeModal
+        session={resumePromptOpen ? resumable : null}
+        onResume={resumeSession}
+        onDismiss={dismissResumePrompt}
+      />
 
       {/* Tweaks panel (host injects toggle in toolbar) */}
       <Suspense fallback={null}>

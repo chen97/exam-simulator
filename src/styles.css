@@ -968,6 +968,90 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   z-index: 50;
 }
 
+/* Resume prompt — shown on load when a session is still in storage, so
+   reopening the tab offers the choice instead of silently dropping you
+   back into an exam. Reuses .drawer-scrim as the backdrop; the wrapper is
+   pointer-transparent so clicks outside the card reach that scrim. */
+.resume-modal-wrap {
+  position: fixed; inset: 0;
+  z-index: 56;
+  display: grid; place-items: center;
+  padding: 16px;
+  pointer-events: none;
+}
+.resume-modal {
+  pointer-events: auto;
+  width: min(440px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-lg);
+  padding: 28px;
+}
+.resume-modal .start-eyebrow { margin-bottom: 12px; }
+.resume-title {
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.resume-sub {
+  color: var(--ink-2);
+  font-size: 14px;
+  margin: 0 0 18px;
+}
+.resume-sub strong { color: var(--ink); font-weight: 600; }
+.resume-meter {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+.resume-meter-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}
+.resume-meta {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 8px;
+}
+.resume-actions {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-top: 22px;
+}
+.resume-actions .primary-btn,
+.resume-actions .ghost-btn { justify-content: center; width: 100%; }
+.resume-note {
+  color: var(--ink-3);
+  font-size: 12px;
+  margin: 14px 0 0;
+  text-align: center;
+}
+
+/* Home-screen banner for the same session, kept after the modal is
+   dismissed so an in-progress exam is never buried. */
+.resume-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+  /* Deliberately NOT the accent fill a selected .pack-card uses — this is a
+     status strip, not another pack you can pick. */
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--accent);
+  background: var(--bg-sunken);
+  border-radius: var(--r-md);
+}
+.resume-bar-title { font-size: 14px; font-weight: 500; }
+.resume-bar-meta { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+.resume-bar-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.ghost-btn.small.danger { color: var(--bad); border-color: var(--bad); }
+
 /* Edge pill shown live during a touch swipe so the user can tell mid-
    gesture that nav is being tracked. The outer disc wears a
    conic-gradient progress ring driven by --swipe-progress (written

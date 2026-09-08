@@ -17,7 +17,7 @@ A clean, mobile-friendly multiple-choice exam simulator that runs entirely in th
 - **Question palette** — Searchable drawer to jump to any question, filter by answered / unanswered / flagged / correct / wrong.
 - **Order controls** — Question order and answer order can each be Sequence (default) or Shuffle.
 - **Estimated time remaining** — Based on minutes-per-question × unanswered count (configurable).
-- **Session resume** — Closing and reopening the tab drops you back at your last answered question with all responses and flags intact.
+- **Session resume** — Closing and reopening the tab shows a prompt offering to continue the exam in progress (at your last answered question, with all responses and flags intact) or go back to the pack list. Dismissing the prompt keeps the session: the home screen goes on offering it until you resume it, start a different exam, or discard it explicitly.
 - **Keyboard shortcuts** — `1–9` answer · `←/→` nav · `F` flag · `P` palette · `D` theme
 - **Mobile-friendly** — Responsive from 380 px phones through 1920 px desktops, ≥40 px tap targets, side click-zones collapse to bottom nav on small screens, motion respects `prefers-reduced-motion`.
 - **Tweaks panel** — Theme, density (compact / comfy / roomy), accent color, time-per-question all adjustable in-page.
