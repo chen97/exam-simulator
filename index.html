@@ -9,11 +9,32 @@
 <meta name="theme-color" content="#0e1014" media="(prefers-color-scheme: dark)" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700&family=Geist+Mono:wght@500&display=swap" rel="stylesheet" />
 </head>
 <body>
+<script>
+// design-system v1.2, tokens.md § type scaling: "Read it before first paint;
+// a flash of default-size type on every load is worse than not shipping the
+// control." Same argument applies to theme, density and accent, so all four
+// land here. React re-applies them on mount; this only removes the flash.
+(function () {
+  try {
+    var t = JSON.parse(localStorage.getItem('examSim:tweaks') || '{}') || {};
+    var el = document.documentElement;
+    var theme = t.theme === 'light' || t.theme === 'dark' ? t.theme
+      : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    el.setAttribute('data-theme', theme);
+    el.setAttribute('data-density', t.density || 'comfortable');
+    el.setAttribute('data-accent', t.accent || 'blue');
+    // Snap to one of the five steps — never write an in-between factor.
+    var steps = [0.875, 1, 1.125, 1.25, 1.5];
+    var n = Number(t.fontSize);
+    var step = !isFinite(n) || n <= 0 ? 1 : steps.reduce(function (best, s) {
+      return Math.abs(s - n) < Math.abs(best - n) ? s : best;
+    });
+    el.style.setProperty('--t-scale', String(step));
+  } catch (e) { /* unreadable or blocked storage — defaults stand */ }
+})();
+</script>
 <div id="root"></div>
 <script type="module" src="/src/main.jsx"></script>
 </body>

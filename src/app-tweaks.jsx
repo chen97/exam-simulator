@@ -6,6 +6,7 @@ import {
   TweakToggle,
   TweakSlider,
 } from './tweaks-panel.jsx';
+import { TEXT_SCALE_STEPS, nearestTextScale } from './text-scale.js';
 
 // Lazy-loaded — the tweaks panel is host-injected and only mounts when its
 // toolbar toggle is opened, so it doesn't need to ship in the first paint.
@@ -44,14 +45,18 @@ function AppTweaks({ tweaks, setTweak }) {
             { value: "orange", label: "Amber" },
           ]}
         />
-        <TweakSlider
-          label="Font size"
-          unit="%"
-          min={85}
-          max={125}
-          step={5}
-          value={Math.round((tweaks.fontSize || 1) * 100)}
-          onChange={(v) => setTweak("fontSize", v / 100)}
+        {/* design-system v1.2, tokens.md § type scaling: five discrete steps,
+            labelled with the step names and never with the numbers, and never
+            a slider. The control's own type does not scale, so it stays
+            reachable at Compact. */}
+        <TweakRadio
+          label="Text size"
+          value={String(nearestTextScale(tweaks.fontSize))}
+          onChange={(v) => setTweak("fontSize", Number(v))}
+          options={TEXT_SCALE_STEPS.map((s) => ({
+            value: String(s.value),
+            label: s.label,
+          }))}
         />
       </TweakSection>
 

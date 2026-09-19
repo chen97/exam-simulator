@@ -18,6 +18,7 @@ import {
   lastAnsweredIndex,
 } from './session.js';
 import { useTweaks } from './tweaks-panel.jsx';
+import { nearestTextScale } from './text-scale.js';
 
 // Defer the docs panel, results screen, and tweaks panel — none are needed
 // for first paint, and the docs/tweaks bundles together pull in a chunk of
@@ -828,11 +829,17 @@ function App() {
     document.documentElement.setAttribute("data-theme", effectiveTheme);
     document.documentElement.setAttribute("data-density", tweaks.density || "comfortable");
     document.documentElement.setAttribute("data-accent", tweaks.accent || "blue");
-    // Clamp the slider value so a stale localStorage entry can't make the
-    // stem hilariously huge or microscopic. 0.85 -> 1.25 keeps option text
-    // between ~12.5 px and ~20 px on the default density.
-    const scale = Math.max(0.85, Math.min(1.25, Number(tweaks.fontSize) || 1));
-    document.documentElement.style.setProperty("--font-scale", String(scale));
+    // design-system v1.2, tokens.md § type scaling: the text-size control
+    // writes one of five discrete factors to --t-scale and nothing else. Snap
+    // rather than clamp — a stale localStorage entry (or the old 0.85..1.25
+    // slider) must land on a step the screens were actually checked at, not
+    // somewhere between two of them. 0.875 is the floor because the icon
+    // button is 24.5 px tall there, half a pixel clear of the 24x24 target
+    // floor; 1.5 is the ceiling because a 45 px control row stops fitting.
+    document.documentElement.style.setProperty(
+      "--t-scale",
+      String(nearestTextScale(tweaks.fontSize)),
+    );
 
     // Keep the iOS Safari toolbar / PWA status bar matching the effective
     // theme even when the user explicitly overrides the OS preference.
