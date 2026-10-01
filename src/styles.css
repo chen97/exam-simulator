@@ -792,7 +792,6 @@ button { font-family: inherit; cursor: pointer; }
   text-overflow: ellipsis;
 }
 .q-tag.diff-easy   { color: var(--ok-tx); border-color: var(--ok); }
-.q-tag.diff-medium { color: var(--ac-tx); border-color: var(--ac); }
 .q-tag.diff-hard   { color: var(--bad-tx);  border-color: var(--bad); }
 .q-flag {
   margin-left: auto;
