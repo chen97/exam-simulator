@@ -161,17 +161,24 @@ html[data-density="spacious"] {
 }
 
 /* Each accent declares its own --accent-tx. Measured as text on #ffffff:
-   Indigo 6.54, Teal 5.47, Violet 6.43 all clear 4.5:1 and take the base;
-   Amber measures 3.86 and is darkened to L=0.54, which measures 5.37. */
+   Indigo 6.54, Teal 5.47, Violet 6.43 all clear 4.5:1 and take the base.
+
+   The fourth option, Amber (hue 50), was removed for design-system v1.5: the
+   accent is blue estate-wide and an accent literally labelled "Amber" is the
+   colour v1.5 gave up. A stored "orange" preference snaps to blue in App.jsx
+   rather than being left to fall through to :root, so the picker and the
+   rendered accent cannot disagree.
+
+   This does NOT touch --warn (hue 80). That is a warning semantic on the
+   status axis, not the accent v1.5 replaced, and the app would otherwise have
+   no warning colour at all. */
 html[data-accent="blue"]   { --accent: oklch(0.48 0.13 250); --accent-tx: oklch(0.48 0.13 250); --accent-soft: oklch(0.95 0.03 250); --accent-fg: #ffffff; accent-color: oklch(0.48 0.13 250); }
 html[data-accent="teal"]   { --accent: oklch(0.5 0.11 195);  --accent-tx: oklch(0.5 0.11 195);  --accent-soft: oklch(0.95 0.03 195); --accent-fg: #ffffff; accent-color: oklch(0.5 0.11 195); }
 html[data-accent="violet"] { --accent: oklch(0.5 0.16 295);  --accent-tx: oklch(0.5 0.16 295);  --accent-soft: oklch(0.95 0.04 295); --accent-fg: #ffffff; accent-color: oklch(0.5 0.16 295); }
-html[data-accent="orange"] { --accent: oklch(0.62 0.16 50);  --accent-tx: oklch(0.54 0.16 50);  --accent-soft: oklch(0.96 0.04 50);  --accent-fg: #15171a; accent-color: oklch(0.62 0.16 50); }
 
 html[data-theme="dark"][data-accent="blue"]   { --accent: oklch(0.72 0.13 250); --accent-tx: oklch(0.72 0.13 250); --accent-soft: oklch(0.28 0.06 250); --accent-fg: #0e1014; accent-color: oklch(0.72 0.13 250); }
 html[data-theme="dark"][data-accent="teal"]   { --accent: oklch(0.74 0.11 195); --accent-tx: oklch(0.74 0.11 195); --accent-soft: oklch(0.28 0.05 195); --accent-fg: #0e1014; accent-color: oklch(0.74 0.11 195); }
 html[data-theme="dark"][data-accent="violet"] { --accent: oklch(0.74 0.16 295); --accent-tx: oklch(0.74 0.16 295); --accent-soft: oklch(0.3 0.07 295);  --accent-fg: #0e1014; accent-color: oklch(0.74 0.16 295); }
-html[data-theme="dark"][data-accent="orange"] { --accent: oklch(0.78 0.16 50);  --accent-tx: oklch(0.78 0.16 50);  --accent-soft: oklch(0.32 0.07 50);  --accent-fg: #0e1014; accent-color: oklch(0.78 0.16 50); }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }

@@ -828,7 +828,13 @@ function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", effectiveTheme);
     document.documentElement.setAttribute("data-density", tweaks.density || "comfortable");
-    document.documentElement.setAttribute("data-accent", tweaks.accent || "blue");
+    // design-system v1.5: "orange" (labelled Amber) was removed as an accent
+    // option. Snap a stale localStorage entry to blue rather than letting it
+    // write data-accent="orange", which now matches no rule — the accent would
+    // silently fall through to :root while the picker showed nothing selected.
+    const ACCENTS = ["blue", "teal", "violet"];
+    const accent = ACCENTS.includes(tweaks.accent) ? tweaks.accent : "blue";
+    document.documentElement.setAttribute("data-accent", accent);
     // design-system v1.2, tokens.md § type scaling: the text-size control
     // writes one of five discrete factors to --t-scale and nothing else. Snap
     // rather than clamp — a stale localStorage entry (or the old 0.85..1.25

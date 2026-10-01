@@ -42,7 +42,6 @@ function AppTweaks({ tweaks, setTweak }) {
             { value: "blue", label: "Indigo" },
             { value: "teal", label: "Teal" },
             { value: "violet", label: "Violet" },
-            { value: "orange", label: "Amber" },
           ]}
         />
         {/* design-system v1.2, tokens.md § type scaling: five discrete steps,
