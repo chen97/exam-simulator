@@ -438,7 +438,7 @@ const OptionCard = memo(function OptionCard({
       <div className="option-row">
         <span className="opt-key mono">{optKey}</span>
         <span className="opt-text">{optText}</span>
-        {showCorrect && <span className="opt-status-icon" style={{color: "var(--good)"}}><Icon.check /></span>}
+        {showCorrect && <span className="opt-status-icon" style={{color: "var(--ok)"}}><Icon.check /></span>}
         {showIncorrect && <span className="opt-status-icon" style={{color: "var(--bad)"}}><Icon.x /></span>}
       </div>
       <div className="opt-rationale-wrap">
