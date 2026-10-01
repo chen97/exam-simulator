@@ -28,28 +28,24 @@
   --ok-soft: oklch(0.95 0.04 155);
   --bad: oklch(0.55 0.18 25);
   --bad-soft: oklch(0.95 0.04 25);
-  --warn: oklch(0.65 0.14 80);
 
   /* ---- Text-safe semantic variants (design-system v1.2, tokens.md § colour).
      Fills, borders, dots and rings use the base. TEXT uses the -tx variant,
      always. In dark the bases already clear 4.5:1 so -tx equals the base; in
      light they do not — measured on #ffffff / --bg / their own -soft tint:
-       --ok  4.52 / 4.18  ->  --ok-tx  5.29 / 4.89 / 4.64
-       --warn  3.29 / 3.04  ->  --warn-tx  5.12 / 4.74 / 4.51
+       --ok    4.52 / 4.18  ->  --ok-tx    5.29 / 4.89 / 4.64
        --bad   5.32 / 4.92  ->  --bad-tx   5.55 / 5.13 / 4.63
      --ac-tx is declared per accent below; only Amber needed darkening. */
   --ac-tx: oklch(0.48 0.13 250);
   --ok-tx: oklch(0.51 0.14 155);
   --bad-tx: oklch(0.54 0.18 25);
-  --warn-tx: oklch(0.54 0.14 80);
 
   /* ---- Ink on a filled semantic surface. The published system carries one
      such literal (--on-accent); the same need here is per-semantic because
      which ink wins flips with the scheme. Light: white clears --ok 4.52 and
-     --bad 5.32 but only 3.29 on --warn, where dark ink measures 5.46. */
+     --bad 5.32. */
   --on-ok: #ffffff;
   --on-bad: #ffffff;
-  --on-warn: #15171a;
 
   --shadow: 0 1px 0 rgba(20, 22, 26, 0.04), 0 4px 16px -8px rgba(20, 22, 26, 0.08);
   --shadow-lg: 0 1px 0 rgba(20, 22, 26, 0.04), 0 20px 60px -20px rgba(20, 22, 26, 0.18);
@@ -141,19 +137,15 @@ html[data-theme="dark"] {
   --ok-soft: oklch(0.26 0.06 155);
   --bad: oklch(0.72 0.16 25);
   --bad-soft: oklch(0.28 0.07 25);
-  --warn: oklch(0.78 0.14 80);
-  /* In dark every base clears 4.5:1 as text (--ok 7.53, --warn 8.67,
-     --bad 6.62 on --panel), so -tx equals the base and costs nothing. */
+  /* In dark every base clears 4.5:1 as text (--ok 7.53, --bad 6.62
+     on --panel), so -tx equals the base and costs nothing. */
   --ac-tx: oklch(0.72 0.13 250);
   --ok-tx: oklch(0.72 0.14 155);
   --bad-tx: oklch(0.72 0.16 25);
-  --warn-tx: oklch(0.78 0.14 80);
-  /* Ink on a filled semantic surface flips here: white measures 2.34 / 2.66 /
-     2.03 on these fills — a hard floor breach — where dark ink measures
-     7.68 / 6.75 / 8.85. */
+  /* Ink on a filled semantic surface flips here: white measures 2.34 / 2.66 on
+     these fills — a hard floor breach — where dark ink measures 7.68 / 6.75. */
   --on-ok: #15171a;
   --on-bad: #15171a;
-  --on-warn: #15171a;
   --shadow: 0 1px 0 rgba(0, 0, 0, 0.4), 0 4px 16px -8px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 1px 0 rgba(0, 0, 0, 0.4), 0 20px 60px -20px rgba(0, 0, 0, 0.8);
 }
@@ -177,9 +169,10 @@ html[data-density="spacious"] {
    rather than being left to fall through to :root, so the picker and the
    rendered accent cannot disagree.
 
-   This does NOT touch --warn (hue 80). That is a warning semantic on the
-   status axis, not the accent v1.5 replaced, and the app would otherwise have
-   no warning colour at all. */
+   The amber --warn (hue 80) that survived v1.5 is gone too (CHE-113): the
+   status axis has three meanings and no fourth. A flagged question and an
+   upload that needs reading both mean "waits for a person", which is --ac;
+   a medium difficulty is the unremarkable middle and takes the plain tag. */
 html[data-accent="blue"]   { --ac: oklch(0.48 0.13 250); --ac-tx: oklch(0.48 0.13 250); --ac-soft: oklch(0.95 0.03 250); --on-accent: #ffffff; accent-color: oklch(0.48 0.13 250); }
 html[data-accent="teal"]   { --ac: oklch(0.5 0.11 195);  --ac-tx: oklch(0.5 0.11 195);  --ac-soft: oklch(0.95 0.03 195); --on-accent: #ffffff; accent-color: oklch(0.5 0.11 195); }
 html[data-accent="violet"] { --ac: oklch(0.5 0.16 295);  --ac-tx: oklch(0.5 0.16 295);  --ac-soft: oklch(0.95 0.04 295); --on-accent: #ffffff; accent-color: oklch(0.5 0.16 295); }
@@ -438,8 +431,7 @@ button { font-family: inherit; cursor: pointer; }
   border: 1px solid var(--line-strong);
 }
 .upload-feedback.error { background: var(--bad-soft); border-color: var(--bad); color: var(--tx); }
-.upload-feedback.warn  { background: oklch(0.96 0.05 80 / 0.4); border-color: var(--warn); color: var(--tx); }
-html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80); }
+.upload-feedback.warn  { background: var(--ac-soft); border-color: var(--ac); color: var(--tx); }
 .upload-feedback-head {
   display: flex; align-items: center; justify-content: space-between;
   font-weight: 650;
@@ -814,8 +806,8 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* diff-medium keeps the plain tag: the middle of the scale has no status. */
 .q-tag.diff-easy   { color: var(--ok-tx); border-color: var(--ok); }
-.q-tag.diff-medium { color: var(--warn-tx); border-color: var(--warn); }
 .q-tag.diff-hard   { color: var(--bad-tx);  border-color: var(--bad); }
 .q-flag {
   margin-left: auto;
@@ -831,9 +823,9 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 .q-flag:hover { background: var(--in); transform: scale(1.08); }
 .q-flag:active { transform: scale(0.9); }
 .q-flag.flagged {
-  background: var(--warn);
-  border-color: var(--warn);
-  color: var(--on-warn);
+  background: var(--ac);
+  border-color: var(--ac);
+  color: var(--on-accent);
   animation: flagPop 300ms cubic-bezier(.4,.7,.2,1);
 }
 @keyframes flagPop {
@@ -1306,7 +1298,7 @@ html[data-theme="dark"] .search-input {
 .palette-mark.answered { background: var(--ac); }
 .palette-mark.correct  { background: var(--ok); }
 .palette-mark.wrong    { background: var(--bad); }
-.palette-mark.flagged  { background: var(--warn); }
+.palette-mark.flagged  { background: var(--ac); }
 .palette-empty {
   padding: var(--s6) var(--s5);
   text-align: center;
