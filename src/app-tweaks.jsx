@@ -2,7 +2,6 @@ import {
   TweaksPanel,
   TweakSection,
   TweakRadio,
-  TweakSelect,
   TweakToggle,
   TweakSlider,
 } from './tweaks-panel.jsx';
@@ -32,16 +31,6 @@ function AppTweaks({ tweaks, setTweak }) {
             { value: "compact", label: "Compact" },
             { value: "comfortable", label: "Comfy" },
             { value: "spacious", label: "Roomy" },
-          ]}
-        />
-        <TweakSelect
-          label="Accent"
-          value={tweaks.accent}
-          onChange={(v) => setTweak("accent", v)}
-          options={[
-            { value: "blue", label: "Indigo" },
-            { value: "teal", label: "Teal" },
-            { value: "violet", label: "Violet" },
           ]}
         />
         {/* design-system v1.2, tokens.md § type scaling: five discrete steps,

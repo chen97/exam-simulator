@@ -52,7 +52,7 @@ function ResultsScreen({ pack, examQuestions, responses, flagged, elapsedMs, onR
           >{pct}%</m.span>
           <span className="results-fraction">{correct} / {total} correct</span>
         </div>
-        <div style={{color: "var(--ink-2)", fontSize: 14}}>Finished in {formatTime(elapsedMs)}</div>
+        <div style={{color: "var(--mut)", fontSize: 14}}>Finished in {formatTime(elapsedMs)}</div>
 
         <m.div
           className="results-stats"
