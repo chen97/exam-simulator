@@ -1,71 +1,65 @@
+/* ---- Tokens: design-system v1.5.8, tokens.md. ----
+   Values are the published block verbatim. Only the selectors differ:
+   the published block is dark-first with light under
+   prefers-color-scheme, but this app has an explicit Auto / Light / Dark
+   control, and index.html resolves Auto to a concrete data-theme before
+   first paint. So the dark values sit on :root, and the light values
+   apply whenever data-theme is not "dark" — the same default this app
+   has always had when no theme is set. Edit values in tokens.md, not
+   here. */
 :root {
-  /* Tell the UA we're in light mode so iOS Safari doesn't auto-darken
-     native controls (selects, search inputs, scrollbars) on top of our
-     own theming. */
-  color-scheme: light;
-  /* Native form controls (radio, checkbox, range thumb, selection) pick
-     up our accent so they don't clash with the rest of the palette. */
-  accent-color: oklch(0.48 0.13 250);
-  --bg: #f7f6f2;
-  --bg-elev: #ffffff;
-  --bg-sunken: #efede7;
-  --ink: #15171a;
-  --ink-2: #4a4d54;
-  --ink-3: #7e8189;
-  --line: rgba(20, 22, 26, 0.09);
-  --line-strong: rgba(20, 22, 26, 0.18);
-  --accent: oklch(0.48 0.13 250);
-  --accent-fg: #ffffff;
-  --accent-soft: oklch(0.95 0.03 250);
-  --good: oklch(0.55 0.14 155);
-  --good-soft: oklch(0.95 0.04 155);
-  --bad: oklch(0.55 0.18 25);
-  --bad-soft: oklch(0.95 0.04 25);
-  --warn: oklch(0.65 0.14 80);
+  /* Surfaces: furthest back to nearest */
+  --bg: #12161c;
+  --panel: #1a1f27;
+  --panel-2: #212832;
+  --in: #262d37;
+  --line: #2c3540;
+  --line-strong: #3a4552;
 
-  /* ---- Text-safe semantic variants (design-system v1.2, tokens.md § colour).
-     Fills, borders, dots and rings use the base. TEXT uses the -tx variant,
-     always. In dark the bases already clear 4.5:1 so -tx equals the base; in
-     light they do not — measured on #ffffff / --bg / their own -soft tint:
-       --good  4.52 / 4.18  ->  --good-tx  5.29 / 4.89 / 4.64
-       --warn  3.29 / 3.04  ->  --warn-tx  5.12 / 4.74 / 4.51
-       --bad   5.32 / 4.92  ->  --bad-tx   5.55 / 5.13 / 4.63
-     --accent-tx is declared per accent below; only Amber needed darkening. */
-  --accent-tx: oklch(0.48 0.13 250);
-  --good-tx: oklch(0.51 0.14 155);
-  --bad-tx: oklch(0.54 0.18 25);
-  --warn-tx: oklch(0.54 0.14 80);
+  /* Ink */
+  --tx: #e8ecf1;
+  --mut: #8d99a8;
+  --on-accent: #08101c;  /* FLIPS between schemes — tokens.md § the ink that flips */
 
-  /* ---- Ink on a filled semantic surface. The published system carries one
-     such literal (--on-accent); the same need here is per-semantic because
-     which ink wins flips with the scheme. Light: white clears --good 4.52 and
-     --bad 5.32 but only 3.29 on --warn, where dark ink measures 5.46. */
-  --on-good: #ffffff;
-  --on-bad: #ffffff;
-  --on-warn: #15171a;
+  /* Axis 1: status — green ran, blue waits, red failed. Nothing else is
+     coloured: a warning is the accent (tokens.md § what blue cannot say). */
+  --ac:  #7aacf7;
+  --ok:  #5ccb8b;
+  --bad: #f07167;
+  --ac-tx: var(--ac);
+  --ok-tx: #5ccb8b;
+  --bad-tx: #f07167;
+  --ac-fill: var(--ac);
+  --ac-hover: color-mix(in srgb, var(--ac) 88%, #fff);
+  /* Deprecated v1.4 spellings, removed in v1.6. Do not write these. */
+  --am: var(--ac);  --am-tx: var(--ac-tx);  --am-fill: var(--ac-fill);
 
-  --shadow: 0 1px 0 rgba(20, 22, 26, 0.04), 0 4px 16px -8px rgba(20, 22, 26, 0.08);
-  --shadow-lg: 0 1px 0 rgba(20, 22, 26, 0.04), 0 20px 60px -20px rgba(20, 22, 26, 0.18);
+  /* Axis 2: market direction. Unused here; shipped so the block is whole. */
+  --up:      #3fd6bb;
+  --down:    #ff6b8a;
+  --neutral: #8d99a8;
+  --up-tx:      #3fd6bb;
+  --down-tx:    #ff6b8a;
+  --neutral-tx: #8d99a8;
 
-  /* ---- Radius (tokens.md § radius) ---- */
-  --r-sm: 7px;      /* something nested inside a control */
-  --r: 10px;        /* controls: button, input, notice, tile */
-  --r-lg: 14px;     /* cards, modals, empty states */
-  --r-xl: 16px;     /* a hero object that is the subject of its screen */
-  --r-full: 999px;  /* pills, dots */
-
-  /* ---- Spacing. Does not scale with --t-scale, by design: scaling type and
-     space together is zoom, and the browser already does zoom better. ---- */
+  /* Spacing. Does not scale with --t-scale. */
   --s0: 2px;  --s1: 4px;  --s2: 8px;  --s3: 12px;
   --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
 
-  /* ---- The user text-size factor (tokens.md § type scaling). The Text size
+  /* Radius */
+  --r-sm: 7px;
+  --r: 10px;
+  --r-lg: 14px;
+  --r-xl: 16px;
+  --r-full: 999px;
+
+  /* The user text-size factor (tokens.md § type scaling). The Text size
      control writes one of five values here and nothing else:
      0.875 | 1 | 1.125 | 1.25 | 1.5. Display type takes the damped factor. */
   --t-scale: 1;
   --t-scale-display: calc(1 + (var(--t-scale) - 1) * 0.5);
 
-  /* Type: the UI scale — everything a working screen is built from. */
+  /* Type: the UI scale */
   --t-micro: calc(10px * var(--t-scale));
   --t-xs: calc(11px * var(--t-scale));
   --t-sm: calc(12px * var(--t-scale));
@@ -74,7 +68,7 @@
   --t-lg: calc(15px * var(--t-scale));
   --t-xl: calc(17px * var(--t-scale));
 
-  /* Type: the display scale — type that is the subject, not the content. */
+  /* Type: the display scale */
   --t-2xl: calc(20px * var(--t-scale-display));
   --t-3xl: calc(26px * var(--t-scale-display));
   --t-4xl: calc(32px * var(--t-scale-display));
@@ -83,71 +77,64 @@
   --t-7xl: calc(60px * var(--t-scale-display));
   --t-8xl: calc(72px * var(--t-scale-display));
 
-  /* ---- Control height. Scales with type, because a control is sized by its
-     content. 0.875 is the floor of the factor precisely because the icon
-     button lands on 26.25 x 24.5 there — half a pixel clear of the 24x24
-     target floor in accessibility.md. ---- */
+  /* Control height */
   --ctl-h: calc(30px * var(--t-scale));
-  --ctl-h-icon: calc(28px * var(--t-scale));
   --ctl-w-icon: calc(30px * var(--t-scale));
+  /* DEPRECATED v1.5.6, removed in v1.6. Still sizes .brand-mark, .pack-delete,
+     .upload-feedback-close, .q-flag and .opt-key here; they move when v1.6
+     retires it (decisions.md § v1.5.6), not in this change. */
+  --ctl-h-icon: calc(28px * var(--t-scale));
 
-  /* ---- Density. Picks from the spacing scale and nothing else — under v1.2
-     type size comes from --t-* and the user factor, so density no longer
-     carries font sizes. ---- */
+  /* Type faces. CJK after Latin, before the generic — do not reorder. */
+  --f-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            "PingFang SC", "Noto Sans SC", sans-serif;
+  --f-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --d-fast: 160ms;
+  --d-quick: 200ms;
+  --d-enter: 250ms;
+  --d-slow: 320ms;
+
+  /* Elevation */
+  --shadow-1: 0 1px 2px rgba(0,0,0,.28), 0 8px 24px -12px rgba(0,0,0,.45);
+  --shadow-2: 0 2px 4px rgba(0,0,0,.32), 0 12px 32px -14px rgba(0,0,0,.55);
+  --shadow-3: 0 24px 64px -24px rgba(0,0,0,.6), 0 1px 2px rgba(0,0,0,.28);
+  --scrim: color-mix(in srgb, #000 52%, transparent);
+
+  --measure: 68ch;
+  --screen: 1080px;
+
+  /* ---- Local to this app, not part of the published block. ---- */
+
+  /* Signal the scheme to the UA per theme rather than "dark light": iOS
+     Safari otherwise re-darkens native controls (selects, search inputs,
+     scrollbars) on top of our own theming. */
+  color-scheme: dark;
+  /* Native form controls (radio, checkbox, range thumb) take the accent. */
+  accent-color: var(--ac);
+
+  /* Density. Picks from the spacing scale and nothing else. */
   --density-pad: var(--s5);
   --density-gap: var(--s3);
-
-  /* ---- Type faces (tokens.md § tokens).
-     The Latin head is the published --f-sans verbatim, so Latin text renders
-     identically to the other six repos. The CJK tail is NOT part of the
-     published stack: this app ships bilingual EN/中文 packs and the Latin-only
-     stack has no CJK coverage. EX-001 grants that tail to personal-assistant
-     alone and explicitly does not extend here — but its stated revisit
-     condition is "a second repo needs CJK", which this is. Raised with Chen
-     Hao on CHE-43; until he answers this is a declared, pending deviation and
-     not a granted one. The UX Designer cannot grant itself an exemption. */
-  --f-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-            "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
-            "Noto Sans SC", sans-serif;
-  --f-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-html[data-theme="dark"] {
-  /* Signal real dark mode to the UA — without this, iOS Safari over-
-     darkens our already-dark form controls and scrollbars, producing
-     the muddy/inverted look the user reported. */
-  color-scheme: dark;
-  accent-color: oklch(0.72 0.13 250);
-  --bg: #0e1014;
-  --bg-elev: #16191f;
-  --bg-sunken: #0a0c0f;
-  --ink: #e8e9ec;
-  --ink-2: #a4a7af;
-  --ink-3: #71747c;
-  --line: rgba(232, 233, 236, 0.08);
-  --line-strong: rgba(232, 233, 236, 0.18);
-  --accent: oklch(0.72 0.13 250);
-  --accent-fg: #0e1014;
-  --accent-soft: oklch(0.28 0.06 250);
-  --good: oklch(0.72 0.14 155);
-  --good-soft: oklch(0.26 0.06 155);
-  --bad: oklch(0.72 0.16 25);
-  --bad-soft: oklch(0.28 0.07 25);
-  --warn: oklch(0.78 0.14 80);
-  /* In dark every base clears 4.5:1 as text (--good 7.53, --warn 8.67,
-     --bad 6.62 on --bg-elev), so -tx equals the base and costs nothing. */
-  --accent-tx: oklch(0.72 0.13 250);
-  --good-tx: oklch(0.72 0.14 155);
-  --bad-tx: oklch(0.72 0.16 25);
-  --warn-tx: oklch(0.78 0.14 80);
-  /* Ink on a filled semantic surface flips here: white measures 2.34 / 2.66 /
-     2.03 on these fills — a hard floor breach — where dark ink measures
-     7.68 / 6.75 / 8.85. */
-  --on-good: #15171a;
-  --on-bad: #15171a;
-  --on-warn: #15171a;
-  --shadow: 0 1px 0 rgba(0, 0, 0, 0.4), 0 4px 16px -8px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 1px 0 rgba(0, 0, 0, 0.4), 0 20px 60px -20px rgba(0, 0, 0, 0.8);
+html:not([data-theme="dark"]) {
+  color-scheme: light;
+  --bg: #f5f7fa; --panel: #ffffff; --panel-2: #f7f9fb; --in: #eef1f5;
+  --line: #dfe4ea; --line-strong: #c8d0d9;
+  --tx: #131820; --mut: #5d6875; --on-accent: #ffffff;
+  --ac: #1964ca; --ok: #1f9254; --bad: #c8382c;
+  --ok-tx: #0e7a46; --bad-tx: #b3241a;
+  --ac-hover: color-mix(in srgb, var(--ac) 88%, #000);  /* DARKENS — § hover travels both ways */
+  --up: #0d9488; --down: #e11d48; --neutral: #5d6875;
+  --up-tx: #0f766e; --down-tx: #be123c; --neutral-tx: #5d6875;
+  --shadow-1: 0 1px 2px rgba(16,24,40,.06), 0 8px 24px -12px rgba(16,24,40,.14);
+  --shadow-2: 0 2px 4px rgba(16,24,40,.08), 0 12px 32px -14px rgba(16,24,40,.18);
+  --shadow-3: 0 24px 64px -24px rgba(16,24,40,.28), 0 1px 2px rgba(16,24,40,.06);
+  --scrim: color-mix(in srgb, #0b1017 34%, transparent);
 }
 
 /* Density moves spacing only, and picks from the spacing scale. */
@@ -160,26 +147,6 @@ html[data-density="spacious"] {
   --density-gap: var(--s4);
 }
 
-/* Each accent declares its own --accent-tx. Measured as text on #ffffff:
-   Indigo 6.54, Teal 5.47, Violet 6.43 all clear 4.5:1 and take the base.
-
-   The fourth option, Amber (hue 50), was removed for design-system v1.5: the
-   accent is blue estate-wide and an accent literally labelled "Amber" is the
-   colour v1.5 gave up. A stored "orange" preference snaps to blue in App.jsx
-   rather than being left to fall through to :root, so the picker and the
-   rendered accent cannot disagree.
-
-   This does NOT touch --warn (hue 80). That is a warning semantic on the
-   status axis, not the accent v1.5 replaced, and the app would otherwise have
-   no warning colour at all. */
-html[data-accent="blue"]   { --accent: oklch(0.48 0.13 250); --accent-tx: oklch(0.48 0.13 250); --accent-soft: oklch(0.95 0.03 250); --accent-fg: #ffffff; accent-color: oklch(0.48 0.13 250); }
-html[data-accent="teal"]   { --accent: oklch(0.5 0.11 195);  --accent-tx: oklch(0.5 0.11 195);  --accent-soft: oklch(0.95 0.03 195); --accent-fg: #ffffff; accent-color: oklch(0.5 0.11 195); }
-html[data-accent="violet"] { --accent: oklch(0.5 0.16 295);  --accent-tx: oklch(0.5 0.16 295);  --accent-soft: oklch(0.95 0.04 295); --accent-fg: #ffffff; accent-color: oklch(0.5 0.16 295); }
-
-html[data-theme="dark"][data-accent="blue"]   { --accent: oklch(0.72 0.13 250); --accent-tx: oklch(0.72 0.13 250); --accent-soft: oklch(0.28 0.06 250); --accent-fg: #0e1014; accent-color: oklch(0.72 0.13 250); }
-html[data-theme="dark"][data-accent="teal"]   { --accent: oklch(0.74 0.11 195); --accent-tx: oklch(0.74 0.11 195); --accent-soft: oklch(0.28 0.05 195); --accent-fg: #0e1014; accent-color: oklch(0.74 0.11 195); }
-html[data-theme="dark"][data-accent="violet"] { --accent: oklch(0.74 0.16 295); --accent-tx: oklch(0.74 0.16 295); --accent-soft: oklch(0.3 0.07 295);  --accent-fg: #0e1014; accent-color: oklch(0.74 0.16 295); }
-
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
 body {
@@ -187,7 +154,7 @@ body {
   font-size: var(--t-base);
   line-height: 1.5;
   background: var(--bg);
-  color: var(--ink);
+  color: var(--tx);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   transition: background-color 200ms ease, color 200ms ease;
@@ -197,11 +164,11 @@ body {
 .mono { font-family: var(--f-mono); }
 
 button { font-family: inherit; cursor: pointer; }
-::selection { background: var(--accent); color: var(--accent-fg); }
+::selection { background: var(--ac); color: var(--on-accent); }
 
 /* Focus */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ac);
   outline-offset: 2px;
   border-radius: var(--r-sm);
 }
@@ -230,7 +197,7 @@ button { font-family: inherit; cursor: pointer; }
 .brand-mark {
   width: var(--ctl-h-icon); height: var(--ctl-h-icon);
   border-radius: var(--r-sm);
-  background: var(--ink);
+  background: var(--tx);
   color: var(--bg);
   display: grid; place-items: center;
   font-family: var(--f-mono);
@@ -239,25 +206,25 @@ button { font-family: inherit; cursor: pointer; }
 .topbar-spacer { flex: 1; }
 .topbar-meta {
   display: flex; align-items: center; gap: var(--s2);
-  color: var(--ink-2);
+  color: var(--mut);
   font-size: var(--t-sm);
   flex-shrink: 0;
   white-space: nowrap;
 }
 .topbar-meta .mono { white-space: nowrap; }
-.topbar-meta .dot { width: 4px; height: 4px; border-radius: var(--r-full); background: var(--ink-3); }
+.topbar-meta .dot { width: 4px; height: 4px; border-radius: var(--r-full); background: var(--mut); }
 
 .icon-btn, .ghost-btn {
   display: inline-flex; align-items: center; gap: var(--s2);
   background: transparent;
   border: 1px solid var(--line-strong);
-  color: var(--ink);
+  color: var(--tx);
   padding: 7px 12px;
   border-radius: var(--r);
   font-size: var(--t-md);
   transition: background 120ms, border-color 120ms, color 120ms;
 }
-.icon-btn:hover, .ghost-btn:hover { background: var(--bg-sunken); }
+.icon-btn:hover, .ghost-btn:hover { background: var(--in); }
 .icon-btn:active, .ghost-btn:active { transform: scale(0.95); }
 .icon-btn.square { padding: 7px 9px; }
 /* Text-based language toggle sized to match the square icon buttons. */
@@ -271,7 +238,7 @@ button { font-family: inherit; cursor: pointer; }
 
 .toggle-row {
   display: inline-flex; align-items: center; gap: var(--s2);
-  font-size: var(--t-md); color: var(--ink-2);
+  font-size: var(--t-md); color: var(--mut);
   padding: 4px 6px; border-radius: var(--r);
   flex-shrink: 0;
 }
@@ -281,7 +248,13 @@ button { font-family: inherit; cursor: pointer; }
   --w: 30px; --h: 18px;
   position: relative;
   width: var(--w); height: var(--h);
-  background: var(--line-strong);
+  /* The switch has no entry in components.md yet; built from tokens and
+     measured. The off track is --mut, not --line-strong: --line-strong
+     is 1.70 / 1.56 against --panel, under the 3:1 non-text floor, so an
+     off switch did not read as a control. --mut is 5.72 / 5.67 against
+     --panel, the knob is 5.72 / 5.67 against the off track and 7.15 /
+     5.65 against the --ac-fill on track (dark / light). */
+  background: var(--mut);
   border-radius: var(--r-full);
   cursor: pointer;
   transition: background 160ms;
@@ -291,12 +264,11 @@ button { font-family: inherit; cursor: pointer; }
   content: '';
   position: absolute; top: 2px; left: 2px;
   width: calc(var(--h) - 4px); height: calc(var(--h) - 4px);
-  background: #fff;
+  background: var(--panel);
   border-radius: var(--r-full);
   transition: transform 160ms cubic-bezier(.4,.7,.2,1);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
-.switch.on { background: var(--accent); }
+.switch.on { background: var(--ac-fill); }
 .switch.on::after { transform: translateX(calc(var(--w) - var(--h))); }
 
 /* Start screen */
@@ -307,18 +279,18 @@ button { font-family: inherit; cursor: pointer; }
 }
 .start-card {
   width: 100%; max-width: 640px;
-  background: var(--bg-elev);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--r-xl);
   padding: var(--s6);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-3);
 }
 .start-eyebrow {
   font-family: var(--f-mono);
   font-size: var(--t-micro); font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--mut);
   margin-bottom: var(--s4);
 }
 .start-title {
@@ -329,7 +301,7 @@ button { font-family: inherit; cursor: pointer; }
   font-weight: 650;
 }
 .start-sub {
-  color: var(--ink-2);
+  color: var(--mut);
   margin: 0 0 var(--s5);
   font-size: var(--t-base);
 }
@@ -348,11 +320,11 @@ button { font-family: inherit; cursor: pointer; }
   text-align: left;
   width: 100%;
 }
-.pack-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.pack-card:hover { border-color: var(--accent); background: var(--accent-soft); }
+.pack-card:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+.pack-card:hover { border-color: var(--ac); background: var(--in); }
 .pack-card.selected {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: var(--ac);
+  background: color-mix(in srgb, var(--ac) 14%, transparent);
   animation: packPop 220ms cubic-bezier(.4,.7,.2,1);
 }
 @keyframes packPop {
@@ -363,7 +335,7 @@ button { font-family: inherit; cursor: pointer; }
 .pack-code {
   font-family: var(--f-mono);
   font-size: var(--t-sm);
-  background: var(--ink);
+  background: var(--tx);
   color: var(--bg);
   padding: 4px 8px;
   border-radius: var(--r-sm);
@@ -371,15 +343,23 @@ button { font-family: inherit; cursor: pointer; }
 }
 .pack-info { flex: 1; min-width: 0; }
 .pack-title { font-weight: 550; margin-bottom: var(--s0); letter-spacing: -0.005em; }
-.pack-meta { color: var(--ink-3); font-size: var(--t-sm); font-family: var(--f-mono); }
+.pack-meta { color: var(--mut); font-size: var(--t-sm); font-family: var(--f-mono); }
+/* --mut on the 14% selected tint over --bg is 4.35 in light — under 4.5.
+   Meta text is only read, never an indicator, so it is promoted to --tx
+   (components.md § the promotion rule). */
+.pack-card.selected .pack-meta { color: var(--tx); }
 .pack-badge {
   margin-left: var(--s2);
   font-size: var(--t-micro); font-weight: 600;
   letter-spacing: 0.1em;
   padding: 2px 6px;
   border-radius: var(--r-sm);
-  background: var(--accent-soft);
-  color: var(--accent-tx);
+  /* Pinned to --panel rather than over transparent, so it measures the same
+     on a plain and a selected card: --ac-tx on it is 5.99 / 4.90. Over
+     transparent on a selected card it would be a wash on a wash, 3.81 in
+     light (components.md § the promotion rule, exit 1). */
+  background: color-mix(in srgb, var(--ac) 10%, var(--panel));
+  color: var(--ac-tx);
   vertical-align: middle;
 }
 .pack-delete {
@@ -388,14 +368,14 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: var(--r);
   border: 1px solid transparent;
   background: transparent;
-  color: var(--ink-3);
+  color: var(--mut);
   flex-shrink: 0;
   transition: color 120ms, background-color 120ms;
 }
 .pack-delete:hover {
   color: var(--bad-tx);
   border-color: var(--bad);
-  background: var(--bad-soft);
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
 }
 
 /* Dropzone */
@@ -408,18 +388,21 @@ button { font-family: inherit; cursor: pointer; }
   border: 1.5px dashed var(--line-strong);
   border-radius: var(--r);
   cursor: pointer;
-  color: var(--ink-2);
+  color: var(--mut);
   background: transparent;
   transition: border-color 140ms, background-color 140ms, color 140ms;
 }
 .dropzone:hover, .dropzone.is-over {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--ink);
+  border-color: var(--ac);
+  background: var(--in);
+  color: var(--tx);
 }
-.dropzone .i { width: 22px; height: 22px; flex-shrink: 0; color: var(--accent); }
-.dropzone-title { font-weight: 650; font-size: var(--t-lg); color: var(--ink); margin-bottom: var(--s0); }
-.dropzone-sub { font-size: var(--t-sm); color: var(--ink-3); }
+.dropzone.is-over { background: color-mix(in srgb, var(--ac) 14%, transparent); }
+/* --mut on that tint over --panel is 4.42 in dark; promoted, as above. */
+.dropzone.is-over .dropzone-sub { color: var(--tx); }
+.dropzone .i { width: 22px; height: 22px; flex-shrink: 0; color: var(--ac); }
+.dropzone-title { font-weight: 650; font-size: var(--t-lg); color: var(--tx); margin-bottom: var(--s0); }
+.dropzone-sub { font-size: var(--t-sm); color: var(--mut); }
 
 /* Upload feedback */
 .upload-feedback {
@@ -429,9 +412,9 @@ button { font-family: inherit; cursor: pointer; }
   font-size: var(--t-base);
   border: 1px solid var(--line-strong);
 }
-.upload-feedback.error { background: var(--bad-soft); border-color: var(--bad); color: var(--ink); }
-.upload-feedback.warn  { background: oklch(0.96 0.05 80 / 0.4); border-color: var(--warn); color: var(--ink); }
-html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80); }
+/* A warning is the accent since v1.5 — tokens.md § what blue cannot say. */
+.upload-feedback.error { background: color-mix(in srgb, var(--bad) 10%, transparent); border-color: var(--bad); color: var(--tx); }
+.upload-feedback.warn  { background: color-mix(in srgb, var(--ac) 10%, transparent); border-color: var(--ac); color: var(--tx); }
 .upload-feedback-head {
   display: flex; align-items: center; justify-content: space-between;
   font-weight: 650;
@@ -444,7 +427,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   color: inherit;
   border-radius: var(--r-sm);
 }
-.upload-feedback-close:hover { background: rgba(0,0,0,0.08); }
+.upload-feedback-close:hover { background: var(--in); }
 .upload-feedback ul { margin: 0; padding-left: 18px; }
 .upload-feedback li { margin: var(--s0) 0; font-size: var(--t-sm); line-height: 1.45; }
 
@@ -456,13 +439,13 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   background: transparent;
   border: 1px solid var(--line);
   border-radius: var(--r);
-  color: var(--ink-2);
+  color: var(--mut);
   font-size: var(--t-md);
   margin-bottom: var(--s3);
   transition: background-color 120ms, color 120ms;
 }
-.docs-toggle:hover { background: var(--bg-sunken); color: var(--ink); }
-.docs-toggle .i { width: 16px; height: 16px; color: var(--accent); }
+.docs-toggle:hover { background: var(--in); color: var(--tx); }
+.docs-toggle .i { width: 16px; height: 16px; color: var(--ac); }
 .docs-toggle span:nth-child(2) { flex: 1; text-align: left; }
 .docs-caret { font-size: var(--t-sm); transition: transform 180ms; }
 .docs-caret.open { transform: rotate(180deg); }
@@ -470,17 +453,17 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 .docs-panel {
   margin: 0 0 var(--s5);
   padding: var(--s4);
-  background: var(--bg-sunken);
+  background: var(--in);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
-.docs-lede { margin: 0 0 var(--s4); font-size: var(--t-base); color: var(--ink-2); line-height: 1.55; }
+.docs-lede { margin: 0 0 var(--s4); font-size: var(--t-base); color: var(--mut); line-height: 1.55; }
 .docs-section-title {
   font-family: var(--f-mono);
   font-size: var(--t-micro); font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--mut);
   margin: var(--s4) 0 var(--s2);
 }
 .docs-section-title-row {
@@ -507,12 +490,12 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   font-size: var(--t-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--mut);
   font-weight: 600;
   background: transparent;
 }
 .docs-table td:first-child { width: 110px; }
-.docs-table td:nth-child(2) { width: 80px; color: var(--ink-2); font-family: var(--f-mono); font-size: var(--t-sm); }
+.docs-table td:nth-child(2) { width: 80px; color: var(--mut); font-family: var(--f-mono); font-size: var(--t-sm); }
 .docs-code {
   background: var(--bg);
   border: 1px solid var(--line);
@@ -520,20 +503,20 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   padding: 14px 16px;
   font-size: var(--t-sm);
   line-height: 1.55;
-  color: var(--ink);
+  color: var(--tx);
   overflow-x: auto;
   margin: 0 0 var(--s1);
   white-space: pre;
 }
-.docs-tips { margin: var(--s1) 0 0; padding-left: 18px; font-size: var(--t-base); color: var(--ink-2); line-height: 1.55; }
+.docs-tips { margin: var(--s1) 0 0; padding-left: 18px; font-size: var(--t-base); color: var(--mut); line-height: 1.55; }
 .docs-tips li { margin: var(--s1) 0; }
 
 /* AI prompt card */
 .ai-prompt-card {
   margin: 0 0 var(--s5);
   padding: var(--s4);
-  border: 1px solid var(--accent);
-  background: var(--accent-soft);
+  border: 1px solid var(--ac);
+  background: color-mix(in srgb, var(--ac) 10%, transparent);
   border-radius: var(--r-lg);
 }
 .ai-prompt-head {
@@ -547,12 +530,12 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   font-size: var(--t-lg);
   font-weight: 650;
   letter-spacing: -0.005em;
-  color: var(--ink);
+  color: var(--tx);
   margin-bottom: var(--s1);
 }
 .ai-prompt-sub {
   font-size: var(--t-sm);
-  color: var(--ink-2);
+  color: var(--mut);
   line-height: 1.5;
 }
 .primary-btn.small {
@@ -566,7 +549,9 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   flex-shrink: 0;
 }
 .primary-btn.small .i { width: 14px; height: 14px; }
-.primary-btn.small.copied { background: var(--good); border-color: var(--good); }
+/* Fills with --ok-tx under --on-accent for the same reason as the outcome
+   keys below: the inherited --bg ink on base --ok fails 4.5:1 in light. */
+.primary-btn.small.copied { background: var(--ok-tx); border-color: var(--ok-tx); color: var(--on-accent); }
 .ai-prompt-preview {
   background: var(--bg);
   border: 1px solid var(--line);
@@ -574,7 +559,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   padding: 12px 14px;
   font-size: var(--t-sm);
   line-height: 1.55;
-  color: var(--ink-2);
+  color: var(--mut);
   white-space: pre-wrap;
   max-height: 220px;
   overflow-y: auto;
@@ -600,7 +585,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   font-size: var(--t-micro); font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--mut);
 }
 .config-input, .config-select {
   appearance: none;
@@ -609,7 +594,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   border-radius: var(--r);
   padding: 9px 12px;
   font: inherit; font-size: var(--t-md);
-  color: var(--ink);
+  color: var(--tx);
 }
 .config-select {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='none' stroke='currentColor' stroke-width='1.5' d='M1 1l4 4 4-4'/></svg>");
@@ -619,9 +604,9 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 }
 .start-actions { display: flex; gap: var(--s2); align-items: center; }
 .primary-btn {
-  background: var(--ink);
+  background: var(--tx);
   color: var(--bg);
-  border: 1px solid var(--ink);
+  border: 1px solid var(--tx);
   padding: 11px 22px;
   border-radius: var(--r);
   font-size: var(--t-md);
@@ -630,11 +615,11 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   transition: transform 120ms, opacity 120ms, box-shadow 120ms;
 }
 .primary-btn:not(:disabled):hover {
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-1);
   transform: translateY(-1px);
 }
 .primary-btn:not(:disabled):active { transform: scale(0.97); }
-.start-count { color: var(--ink-3); font-weight: 400; font-size: var(--t-sm); margin: 0 var(--s1); }
+.start-count { color: var(--mut); font-weight: 400; font-size: var(--t-sm); margin: 0 var(--s1); }
 .primary-btn { display: inline-flex; align-items: center; }
 
 /* Exam view */
@@ -693,7 +678,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--ink-3);
+  color: var(--mut);
   transition: background 180ms ease, color 180ms ease;
   font: inherit;
   padding: 0;
@@ -702,8 +687,8 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 .side-zone.left  { grid-column: 1; justify-content: flex-end;   padding-right: 24px; }
 .side-zone.right { grid-column: 3; justify-content: flex-start; padding-left:  24px; }
 .side-zone:hover:not(:disabled) {
-  background: var(--bg-sunken);
-  color: var(--ink);
+  background: var(--in);
+  color: var(--tx);
 }
 .side-zone:disabled {
   cursor: not-allowed;
@@ -728,15 +713,15 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   display: grid; place-items: center;
   border-radius: var(--r-full);
   border: 1px solid var(--line-strong);
-  background: var(--bg-elev);
-  color: var(--ink);
+  background: var(--panel);
+  color: var(--tx);
   transition: background 140ms, border-color 140ms, color 140ms, transform 140ms;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-1);
 }
 .side-zone:hover:not(:disabled) .side-zone-arrow {
-  background: var(--ink);
+  background: var(--tx);
   color: var(--bg);
-  border-color: var(--ink);
+  border-color: var(--tx);
   transform: scale(1.06);
 }
 .side-zone:active:not(:disabled) .side-zone-arrow { transform: scale(0.96); }
@@ -761,19 +746,19 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   padding: 5px 10px;
   border: 1px solid var(--line-strong);
   border-radius: var(--r-full);
-  color: var(--ink-2);
+  color: var(--mut);
   white-space: nowrap;
   flex-shrink: 0;
 }
-.timer-pill-label { color: var(--ink-3); }
+.timer-pill-label { color: var(--mut); }
 
 /* Question card */
 .question-card {
-  background: var(--bg-elev);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   padding: var(--density-pad);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-1);
   /* During slide-nav this card transforms in/out; let the browser isolate
      paint to its own subtree so siblings aren't repainted each frame. */
   contain: layout paint;
@@ -787,7 +772,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 .q-num {
   font-family: var(--f-mono);
   font-size: var(--t-xs);
-  background: var(--ink);
+  background: var(--tx);
   color: var(--bg);
   padding: 3px 8px;
   border-radius: var(--r-sm);
@@ -800,14 +785,14 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   padding: 3px 8px;
   border-radius: var(--r-full);
   border: 1px solid var(--line-strong);
-  color: var(--ink-2);
+  color: var(--mut);
   white-space: nowrap;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.q-tag.diff-easy   { color: var(--good-tx); border-color: var(--good); }
-.q-tag.diff-medium { color: var(--warn-tx); border-color: var(--warn); }
+.q-tag.diff-easy   { color: var(--ok-tx); border-color: var(--ok); }
+.q-tag.diff-medium { color: var(--ac-tx); border-color: var(--ac); }
 .q-tag.diff-hard   { color: var(--bad-tx);  border-color: var(--bad); }
 .q-flag {
   margin-left: auto;
@@ -816,16 +801,16 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   border-radius: var(--r);
   border: 1px solid var(--line-strong);
   background: transparent;
-  color: var(--ink-2);
+  color: var(--mut);
   transition: background-color 180ms, border-color 180ms, color 180ms, transform 180ms;
   cursor: pointer;
 }
-.q-flag:hover { background: var(--bg-sunken); transform: scale(1.08); }
+.q-flag:hover { background: var(--in); transform: scale(1.08); }
 .q-flag:active { transform: scale(0.9); }
 .q-flag.flagged {
-  background: var(--warn);
-  border-color: var(--warn);
-  color: var(--on-warn);
+  background: var(--ac);
+  border-color: var(--ac);
+  color: var(--on-accent);
   animation: flagPop 300ms cubic-bezier(.4,.7,.2,1);
 }
 @keyframes flagPop {
@@ -840,7 +825,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   letter-spacing: -0.006em;
   font-weight: 650;
   margin: var(--s1) 0 var(--s5);
-  color: var(--ink);
+  color: var(--tx);
   text-wrap: pretty;
 }
 
@@ -859,8 +844,8 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   will-change: transform;
 }
 .option-card:not(:disabled):hover {
-  border-color: var(--ink-2);
-  background: var(--bg-sunken);
+  border-color: var(--mut);
+  background: var(--in);
   transform: translateY(-1px);
 }
 .option-card:not(:disabled):active {
@@ -879,15 +864,15 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   font-family: var(--f-mono);
   font-size: var(--t-md);
   font-weight: 550;
-  color: var(--ink-2);
-  background: var(--bg-elev);
+  color: var(--mut);
+  background: var(--panel);
   transition: background-color 140ms, color 140ms, border-color 140ms;
 }
 .opt-text {
   flex: 1;
   font-size: var(--t-base);
   line-height: 1.5;
-  color: var(--ink);
+  color: var(--tx);
   padding-top: 2px;
   text-wrap: pretty;
 }
@@ -900,22 +885,29 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 
 /* selected/correct/incorrect states */
 .option-card.is-correct {
-  border-color: var(--good);
-  background: var(--good-soft);
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 10%, transparent);
 }
+/* A filled outcome key carries ink, so it fills with the -tx value — the
+   one built to clear 4.5:1. --on-accent on base --ok is 3.96 in light;
+   on --ok-tx it is 5.40, and on --bad-tx 6.60. In dark -tx equals the base
+   and the ink is 9.42 / 6.60. The fill moves, never the ink (SKILL.md
+   rule 4). --on-accent is borrowed because it already flips the right
+   way: white on the dark light-scheme fills, near-black on the light
+   dark-scheme ones. */
 .option-card.is-correct .opt-key {
-  background: var(--good);
-  color: var(--on-good);
-  border-color: var(--good);
+  background: var(--ok-tx);
+  color: var(--on-accent);
+  border-color: var(--ok-tx);
 }
 .option-card.is-incorrect {
   border-color: var(--bad);
-  background: var(--bad-soft);
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
 }
 .option-card.is-incorrect .opt-key {
-  background: var(--bad);
-  color: var(--on-bad);
-  border-color: var(--bad);
+  background: var(--bad-tx);
+  color: var(--on-accent);
+  border-color: var(--bad-tx);
 }
 .option-card.is-correct { animation: popIn 280ms cubic-bezier(.4,.7,.2,1); }
 .option-card.is-incorrect { animation: popIn 280ms cubic-bezier(.4,.7,.2,1); }
@@ -923,19 +915,19 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 
 /* Multi-select: pre-submit pending pick */
 .option-card.is-pending {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: var(--ac);
+  background: color-mix(in srgb, var(--ac) 14%, transparent);
 }
 .option-card.is-pending .opt-key {
-  background: var(--accent);
-  color: var(--accent-fg);
-  border-color: var(--accent);
+  background: var(--ac-fill);
+  color: var(--on-accent);
+  border-color: var(--ac);
 }
 
 /* "Select N" tag and Submit row for multi-select questions */
 .q-tag.q-tag-multi {
-  color: var(--accent-tx);
-  border-color: var(--accent);
+  color: var(--ac-tx);
+  border-color: var(--ac);
 }
 .multi-submit-row {
   display: flex;
@@ -946,7 +938,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 }
 .multi-count {
   font-size: var(--t-sm);
-  color: var(--ink-2);
+  color: var(--mut);
 }
 .multi-submit-row .primary-btn:disabled {
   opacity: 0.45;
@@ -972,7 +964,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 .opt-rationale {
   margin-top: var(--s2);
   font-size: var(--t-base);
-  color: var(--ink-2);
+  color: var(--mut);
   line-height: 1.55;
   text-wrap: pretty;
   opacity: 0;
@@ -985,7 +977,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   font-size: var(--t-micro); font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--mut);
   margin-bottom: var(--s0);
   display: block;
 }
@@ -999,17 +991,17 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 .explanation-card {
   margin-top: var(--s5);
   padding: var(--s4);
-  background: var(--accent-soft);
+  background: color-mix(in srgb, var(--ac) 10%, transparent);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   animation: slideDown 280ms cubic-bezier(.4,.7,.2,1);
 }
-.explanation-card .rationale-label { color: var(--accent-tx); }
+.explanation-card .rationale-label { color: var(--ac-tx); }
 .explanation-card p {
   margin: 0;
   font-size: var(--t-base);
   line-height: 1.55;
-  color: var(--ink);
+  color: var(--tx);
 }
 
 /* Nav row at the bottom of the card — only shown on narrow screens where
@@ -1027,21 +1019,21 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   margin-top: var(--s4);
   font-family: var(--f-mono);
   font-size: var(--t-micro); font-weight: 600;
-  color: var(--ink-3);
+  color: var(--mut);
   letter-spacing: 0.04em;
 }
 .autoadvance {
   display: flex; align-items: center; gap: var(--s2);
   font-family: var(--f-mono);
   font-size: var(--t-xs); font-weight: 600;
-  color: var(--accent-tx);
+  color: var(--ac-tx);
   padding: 6px 10px;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--ac);
   border-radius: var(--r-full);
-  background: var(--accent-soft);
+  background: color-mix(in srgb, var(--ac) 10%, transparent);
 }
 .autoadvance .dot-pulse {
-  width: 6px; height: 6px; border-radius: var(--r-full); background: var(--accent);
+  width: 6px; height: 6px; border-radius: var(--r-full); background: var(--ac);
   animation: pulse 900ms ease-in-out infinite;
 }
 @keyframes pulse {
@@ -1054,7 +1046,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
    in PaletteDrawer; CSS only owns the base layout. */
 .drawer-scrim {
   position: fixed; inset: 0;
-  background: rgba(8, 10, 14, 0.4);
+  background: var(--scrim);
   z-index: 50;
 }
 
@@ -1074,10 +1066,10 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   width: min(440px, 100%);
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
-  background: var(--bg-elev);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-3);
   padding: var(--s5);
 }
 .resume-modal .start-eyebrow { margin-bottom: var(--s3); }
@@ -1089,25 +1081,25 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   margin: 0 0 var(--s2);
 }
 .resume-sub {
-  color: var(--ink-2);
+  color: var(--mut);
   font-size: var(--t-base);
   margin: 0 0 var(--s4);
 }
-.resume-sub strong { color: var(--ink); font-weight: 650; }
+.resume-sub strong { color: var(--tx); font-weight: 650; }
 .resume-meter {
   height: 6px;
   border-radius: var(--r-full);
-  background: var(--bg-sunken);
+  background: var(--in);
   overflow: hidden;
 }
 .resume-meter-fill {
   height: 100%;
-  background: var(--accent);
+  background: var(--ac);
   border-radius: inherit;
 }
 .resume-meta {
   font-size: var(--t-xs);
-  color: var(--ink-3);
+  color: var(--mut);
   margin-top: var(--s2);
 }
 .resume-actions {
@@ -1117,7 +1109,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 .resume-actions .primary-btn,
 .resume-actions .ghost-btn { justify-content: center; width: 100%; }
 .resume-note {
-  color: var(--ink-3);
+  color: var(--mut);
   font-size: var(--t-sm);
   margin: var(--s3) 0 0;
   text-align: center;
@@ -1133,12 +1125,12 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   /* Deliberately NOT the accent fill a selected .pack-card uses — this is a
      status strip, not another pack you can pick. */
   border: 1px solid var(--line-strong);
-  border-left: 3px solid var(--accent);
-  background: var(--bg-sunken);
+  border-left: 3px solid var(--ac);
+  background: var(--in);
   border-radius: var(--r);
 }
 .resume-bar-title { font-size: var(--t-lg); font-weight: 650; }
-.resume-bar-meta { font-size: var(--t-xs); color: var(--ink-3); margin-top: var(--s0); }
+.resume-bar-meta { font-size: var(--t-xs); color: var(--mut); margin-top: var(--s0); }
 .resume-bar-actions { display: flex; gap: var(--s1); flex-shrink: 0; }
 .ghost-btn.small.danger { color: var(--bad-tx); border-color: var(--bad); }
 
@@ -1162,7 +1154,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   background:
     conic-gradient(
       from -90deg,
-      var(--accent) calc(var(--swipe-progress) * 360deg),
+      var(--ac) calc(var(--swipe-progress) * 360deg),
       var(--line) calc(var(--swipe-progress) * 360deg) 360deg
     );
   opacity: 0;
@@ -1182,15 +1174,15 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
 .swipe-indicator .pill-inner {
   width: 100%; height: 100%;
   border-radius: var(--r-full);
-  background: var(--bg-elev);
-  color: var(--ink-2);
+  background: var(--panel);
+  color: var(--mut);
   display: grid; place-items: center;
   transition: background-color 220ms ease, color 220ms ease;
 }
 .swipe-indicator .i { width: 22px; height: 22px; }
 .swipe-indicator.is-ready .pill-inner {
-  background: var(--accent);
-  color: var(--accent-fg);
+  background: var(--ac);
+  color: var(--on-accent);
   animation: pillPop 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes pillPop {
@@ -1211,7 +1203,7 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   position: fixed; top: 0; right: 0;
   width: min(420px, 92vw);
   height: 100vh;
-  background: var(--bg-elev);
+  background: var(--panel);
   border-left: 1px solid var(--line);
   z-index: 55;
   display: flex; flex-direction: column;
@@ -1237,31 +1229,51 @@ html[data-theme="dark"] .upload-feedback.warn { background: oklch(0.28 0.07 80);
   border-radius: var(--r);
   padding: 9px 12px 9px 34px;
   font: inherit; font-size: var(--t-md);
-  color: var(--ink);
-  /* %23currentColor is invalid in url() — encode the ink-3 value per theme
-     instead. Light tone for default, overridden in dark. */
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237e8189' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/></svg>");
+  color: var(--tx);
+  /* %23currentColor is invalid in url() — encode the --mut value per theme
+     instead (#5d6875 light, #8d99a8 dark). Light is the default, as in the
+     token block; keep both in step with tokens.md. */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235d6875' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/></svg>");
   background-repeat: no-repeat;
   background-position: 11px center;
 }
 html[data-theme="dark"] .search-input {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a4a7af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238d99a8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4.3-4.3'/></svg>");
 }
-.search-input::placeholder { color: var(--ink-3); }
+.search-input::placeholder { color: var(--mut); }
 .search-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 
-.filter-chips { display: flex; flex-wrap: wrap; gap: var(--s1); }
+/* The filter bar is a single-choice set, so it is case 3 of components.md
+   § Selected state: the well groups the chips, and the chosen one is raised
+   rather than coloured. The accent stays free for the current-question row
+   just below it, which is the thing on this drawer that marks where you are.
+   Every channel is required — fill, border, the --mut → --tx ink change,
+   and aria-pressed — because none clears 3:1 on its own in dark. */
+.filter-chips {
+  display: inline-flex; flex-wrap: wrap; gap: var(--s0);
+  align-self: flex-start; max-width: 100%;
+  padding: var(--s0);
+  background: var(--in);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
 .chip {
   font-family: var(--f-mono);
   font-size: var(--t-xs); font-weight: 600;
   padding: 4px 9px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-full);
+  min-height: 24px;  /* target floor — the chips sit --s0 apart, so no spacing exception */
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
   background: transparent;
-  color: var(--ink-2);
+  color: var(--mut);
   letter-spacing: 0.04em;
 }
-.chip.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip[aria-pressed="true"] {
+  background: var(--panel);
+  border-color: var(--line-strong);
+  color: var(--tx);
+  box-shadow: var(--shadow-1);
+}
 
 .drawer-list { flex: 1; overflow-y: auto; padding: 8px 0; }
 .palette-row {
@@ -1271,23 +1283,23 @@ html[data-theme="dark"] .search-input {
   border: none; background: transparent;
   text-align: left;
   border-left: 3px solid transparent;
-  color: var(--ink);
+  color: var(--tx);
   transition: background 100ms, border-color 100ms;
 }
-.palette-row:hover { background: var(--bg-sunken); }
-.palette-row.current { background: var(--accent-soft); border-left-color: var(--accent); }
+.palette-row:hover { background: var(--in); }
+.palette-row.current { background: color-mix(in srgb, var(--ac) 14%, transparent); border-left-color: var(--ac); }
 .palette-num {
   font-family: var(--f-mono);
   font-size: var(--t-sm);
-  color: var(--ink-3);
+  color: var(--mut);
   width: 36px; flex-shrink: 0;
 }
-.palette-row.current .palette-num { color: var(--accent-tx); font-weight: 600; }
+.palette-row.current .palette-num { color: var(--ac-tx); font-weight: 600; }
 .palette-stem {
   flex: 1; min-width: 0;
   font-size: var(--t-base);
   line-height: 1.4;
-  color: var(--ink);
+  color: var(--tx);
   overflow: hidden; text-overflow: ellipsis;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
@@ -1295,14 +1307,14 @@ html[data-theme="dark"] .search-input {
 .palette-mark {
   width: 8px; height: 8px; border-radius: var(--r-full);
 }
-.palette-mark.answered { background: var(--accent); }
-.palette-mark.correct  { background: var(--good); }
+.palette-mark.answered { background: var(--ac); }
+.palette-mark.correct  { background: var(--ok); }
 .palette-mark.wrong    { background: var(--bad); }
-.palette-mark.flagged  { background: var(--warn); }
+.palette-mark.flagged  { background: var(--ac); }
 .palette-empty {
   padding: var(--s6) var(--s5);
   text-align: center;
-  color: var(--ink-3);
+  color: var(--mut);
   font-size: var(--t-base);
 }
 
@@ -1314,11 +1326,11 @@ html[data-theme="dark"] .search-input {
 }
 .results-card {
   width: 100%; max-width: 720px;
-  background: var(--bg-elev);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--r-xl);
   padding: var(--s6);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-1);
 }
 .results-score {
   display: flex; align-items: baseline; gap: var(--s4);
@@ -1333,7 +1345,7 @@ html[data-theme="dark"] .search-input {
 .results-fraction {
   font-family: var(--f-mono);
   font-size: var(--t-xl);
-  color: var(--ink-2);
+  color: var(--mut);
 }
 .results-stats {
   display: grid; grid-template-columns: repeat(3, 1fr);
@@ -1351,7 +1363,7 @@ html[data-theme="dark"] .search-input {
   font-size: var(--t-micro); font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--mut);
   margin-bottom: var(--s2);
 }
 .stat-value {
@@ -1359,7 +1371,7 @@ html[data-theme="dark"] .search-input {
   font-weight: 650;
   letter-spacing: -0.014em; line-height: 1.3;
 }
-.stat-value.good { color: var(--good-tx); }
+.stat-value.good { color: var(--ok-tx); }
 .stat-value.bad { color: var(--bad-tx); }
 .domain-list { margin-top: var(--s4); display: flex; flex-direction: column; gap: var(--s2); }
 .domain-row {
@@ -1369,9 +1381,9 @@ html[data-theme="dark"] .search-input {
 }
 .domain-row:last-child { border-bottom: none; }
 .domain-name { flex: 1; font-size: var(--t-base); }
-.domain-bar { width: 120px; height: 4px; background: var(--bg-sunken); border-radius: var(--r-full); overflow: hidden; }
-.domain-bar-fill { height: 100%; background: var(--accent); }
-.domain-score { font-family: var(--f-mono); font-size: var(--t-sm); color: var(--ink-2); min-width: 56px; text-align: right; }
+.domain-bar { width: 120px; height: 4px; background: var(--in); border-radius: var(--r-full); overflow: hidden; }
+.domain-bar-fill { height: 100%; background: var(--ac); }
+.domain-score { font-family: var(--f-mono); font-size: var(--t-sm); color: var(--mut); min-width: 56px; text-align: right; }
 
 /* svg icons */
 .i { width: 16px; height: 16px; display: inline-block; vertical-align: middle; }

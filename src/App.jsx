@@ -35,7 +35,6 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "explanationMode": true,
   "studyMode": false,
   "density": "comfortable",
-  "accent": "blue",
   "showTimer": true,
   "minutesPerQuestion": 3,
   "fontSize": 1,
@@ -438,7 +437,7 @@ const OptionCard = memo(function OptionCard({
       <div className="option-row">
         <span className="opt-key mono">{optKey}</span>
         <span className="opt-text">{optText}</span>
-        {showCorrect && <span className="opt-status-icon" style={{color: "var(--good)"}}><Icon.check /></span>}
+        {showCorrect && <span className="opt-status-icon" style={{color: "var(--ok)"}}><Icon.check /></span>}
         {showIncorrect && <span className="opt-status-icon" style={{color: "var(--bad)"}}><Icon.x /></span>}
       </div>
       <div className="opt-rationale-wrap">
@@ -681,7 +680,7 @@ function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, curre
                   ["correct", "Correct"],
                   ["wrong", "Wrong"],
                 ].map(([k, l]) => (
-                  <button key={k} className={"chip" + (filter === k ? " active" : "")} onClick={() => setFilter(k)}>{l}</button>
+                  <button key={k} type="button" className="chip" aria-pressed={filter === k} onClick={() => setFilter(k)}>{l}</button>
                 ))}
               </div>
             </div>
@@ -828,13 +827,6 @@ function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", effectiveTheme);
     document.documentElement.setAttribute("data-density", tweaks.density || "comfortable");
-    // design-system v1.5: "orange" (labelled Amber) was removed as an accent
-    // option. Snap a stale localStorage entry to blue rather than letting it
-    // write data-accent="orange", which now matches no rule — the accent would
-    // silently fall through to :root while the picker showed nothing selected.
-    const ACCENTS = ["blue", "teal", "violet"];
-    const accent = ACCENTS.includes(tweaks.accent) ? tweaks.accent : "blue";
-    document.documentElement.setAttribute("data-accent", accent);
     // design-system v1.2, tokens.md § type scaling: the text-size control
     // writes one of five discrete factors to --t-scale and nothing else. Snap
     // rather than clamp — a stale localStorage entry (or the old 0.85..1.25
@@ -857,8 +849,9 @@ function App() {
       meta.name = "theme-color";
       document.head.appendChild(meta);
     }
-    meta.content = effectiveTheme === "dark" ? "#0e1014" : "#f7f6f2";
-  }, [effectiveTheme, tweaks.density, tweaks.accent, tweaks.fontSize]);
+    // --bg per scheme, tokens.md. Keep in step with index.html.
+    meta.content = effectiveTheme === "dark" ? "#12161c" : "#f5f7fa";
+  }, [effectiveTheme, tweaks.density, tweaks.fontSize]);
 
   // Build pack registry: built-in packs from window.ExamPacks + uploaded customs
   const [customPacks, setCustomPacks] = useState(() => loadCustomPacks());
