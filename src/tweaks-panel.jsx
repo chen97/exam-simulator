@@ -63,15 +63,16 @@ const __TWEAKS_STYLE = `
     position:fixed;right:var(--s4);bottom:var(--s4);z-index:2147483646;width:280px;
     max-height:calc(100vh - 2 * var(--s4));display:flex;flex-direction:column;
     transform:scale(var(--dc-inv-zoom,1));transform-origin:bottom right;
-    background:var(--panel);color:var(--tx);
-    border:1px solid var(--line);border-radius:var(--r-lg);
+    background:var(--bar-glass);color:var(--tx);
+    -webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);
+    border:1px solid var(--glass-line);border-radius:20px;
     box-shadow:var(--shadow-3);
     font:400 var(--twk-t)/1.4 var(--f-sans);overflow:hidden}
   .twk-hd{display:flex;align-items:center;justify-content:space-between;
     padding:var(--s2) var(--s2) var(--s2) var(--s4);cursor:move;user-select:none}
   .twk-hd b{font-size:var(--twk-t);font-weight:650}
   .twk-x{appearance:none;border:0;background:transparent;color:var(--mut);
-    min-width:24px;min-height:24px;border-radius:var(--r-sm);cursor:default;
+    min-width:24px;min-height:24px;border-radius:var(--r-full);cursor:default;
     font-size:var(--twk-t);line-height:1}
   .twk-x:hover{background:var(--in);color:var(--tx)}
   .twk-body{padding:var(--s0) var(--s4) var(--s4);display:flex;flex-direction:column;gap:var(--s3);
@@ -94,8 +95,8 @@ const __TWEAKS_STYLE = `
   .twk-sect:first-child{padding-top:0}
 
   .twk-field{appearance:none;box-sizing:border-box;width:100%;min-width:0;height:var(--twk-ctl-h);
-    padding:0 var(--s2);border:1px solid var(--line-strong);border-radius:var(--r);
-    background:var(--in);color:inherit;font:inherit}
+    padding:0 var(--s2);border:1px solid var(--line-strong);border-radius:12px;
+    background:color-mix(in srgb,var(--panel) 70%,transparent);color:inherit;font:inherit}
   select.twk-field{padding-right:var(--s5);
     background-image:linear-gradient(45deg,transparent 50%,var(--mut) 50%),
       linear-gradient(135deg,var(--mut) 50%,transparent 50%);
@@ -111,26 +112,28 @@ const __TWEAKS_STYLE = `
   .twk-slider::-moz-range-thumb{width:14px;height:14px;border-radius:var(--r-full);
     background:var(--ac-fill);border:0;cursor:default}
 
-  /* Case 3 of components.md § Selected state: the well groups the options,
-     the chosen one is raised, and its ink goes --mut → --tx. No accent. */
-  .twk-seg{position:relative;display:flex;padding:var(--s0);border-radius:var(--r);
-    background:var(--in);border:1px solid var(--line);user-select:none}
+  /* The segmented control (look.md § glass components): an --in track, the
+     chosen segment raised to --glass-2 with a soft shadow (white at 16% in
+     dark), its ink --mut → --tx. No accent. */
+  .twk-seg{position:relative;display:flex;padding:var(--s0);border-radius:var(--r-lg);
+    background:var(--in);border:0;user-select:none}
   .twk-seg-thumb{position:absolute;top:var(--s0);bottom:var(--s0);box-sizing:border-box;
-    border-radius:var(--r-sm);background:var(--panel);border:1px solid var(--line-strong);
-    box-shadow:var(--shadow-1);
+    border-radius:12px;background:var(--glass-2);border:0;
+    box-shadow:0 2px 8px rgba(40,50,120,.12);
     transition:left var(--d-fast) var(--ease-out),width var(--d-fast) var(--ease-out)}
+  :root[data-theme="dark"] .twk-seg-thumb{background:rgba(255,255,255,.16);box-shadow:none}
   .twk-seg.dragging .twk-seg-thumb{transition:none}
   .twk-seg button{appearance:none;position:relative;z-index:1;flex:1;border:0;
     background:transparent;color:var(--mut);font:inherit;font-weight:550;min-height:24px;
-    border-radius:var(--r-sm);cursor:default;padding:var(--s1);line-height:1.2;
+    border-radius:12px;cursor:default;padding:var(--s1);line-height:1.2;font-weight:600;
     overflow-wrap:anywhere}
   .twk-seg button[aria-checked="true"]{color:var(--tx)}
 
-  /* Same switch as .switch in styles.css: --mut off track, --ac-fill on,
-     --panel knob — the measured pairs are written down there. */
+  /* Same switch as .switch in styles.css: --mut off track, --ac on,
+     --panel knob — measured in the v2.0 PR (CHE-1439). */
   .twk-toggle{position:relative;width:32px;height:18px;border:0;border-radius:var(--r-full);
     background:var(--mut);transition:background var(--d-fast) var(--ease-out);cursor:default;padding:0}
-  .twk-toggle[data-on="1"]{background:var(--ac-fill)}
+  .twk-toggle[data-on="1"]{background:var(--ac)}
   .twk-toggle i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:var(--r-full);
     background:var(--panel);transition:transform var(--d-fast) var(--ease-out)}
   .twk-toggle[data-on="1"] i{transform:translateX(14px)}
@@ -141,7 +144,8 @@ const __TWEAKS_STYLE = `
   }
 
   .twk-num{display:flex;align-items:center;box-sizing:border-box;min-width:0;height:var(--twk-ctl-h);
-    padding:0 0 0 var(--s2);border:1px solid var(--line-strong);border-radius:var(--r);background:var(--in)}
+    padding:0 0 0 var(--s2);border:1px solid var(--line-strong);border-radius:12px;
+    background:color-mix(in srgb,var(--panel) 70%,transparent)}
   .twk-num-lbl{font-weight:600;color:var(--mut);cursor:ew-resize;
     user-select:none;padding-right:var(--s2)}
   .twk-num input{flex:1;min-width:0;height:100%;border:0;background:transparent;
@@ -151,13 +155,13 @@ const __TWEAKS_STYLE = `
     -webkit-appearance:none;margin:0}
   .twk-num-unit{padding-right:var(--s2);color:var(--mut)}
 
-  /* components.md § Button: primary and default. */
+  /* look.md § glass components: the primary and default buttons, capsules. */
   .twk-btn{appearance:none;min-height:var(--twk-ctl-h);padding:0 var(--s3);
-    border:1px solid transparent;border-radius:var(--r);
-    background:var(--ac-fill);color:var(--on-accent);font:inherit;font-weight:650;cursor:default;
-    transition:background var(--d-fast) var(--ease-out)}
-  .twk-btn:hover{background:var(--ac-hover)}
-  .twk-btn.secondary{background:var(--panel-2);border-color:var(--line-strong);color:var(--tx);font-weight:550}
+    border:1px solid transparent;border-radius:var(--r-full);
+    background:var(--grad);color:var(--on-accent);font:inherit;font-weight:650;cursor:default;
+    box-shadow:0 6px 16px -6px var(--ac-fill);transition:filter var(--d-fast) var(--ease-out)}
+  .twk-btn:hover{filter:brightness(.94)}
+  .twk-btn.secondary{background:var(--panel-2);border-color:var(--line-strong);color:var(--tx);font-weight:550;box-shadow:none}
   .twk-btn.secondary:hover{background:var(--in)}
 
   .twk-swatch{appearance:none;-webkit-appearance:none;width:56px;height:24px;
@@ -184,6 +188,16 @@ const __TWEAKS_STYLE = `
   .twk-chip>span>i:first-child{box-shadow:none}
   .twk-chip svg{position:absolute;top:6px;left:6px;width:13px;height:13px;
     filter:drop-shadow(0 1px 1px var(--scrim))}
+
+  /* look.md § targets: 44px on touch. */
+  @media (max-width:760px),(pointer:coarse){
+    .twk-x{min-width:44px;min-height:44px}
+    .twk-seg button{min-height:44px}
+    .twk-field,.twk-num,.twk-btn{height:auto;min-height:44px}
+    .twk-toggle{width:44px;height:26px}
+    .twk-toggle i{width:22px;height:22px}
+    .twk-toggle[data-on="1"] i{transform:translateX(18px)}
+  }
 `;
 
 // ── useTweaks ───────────────────────────────────────────────────────────────

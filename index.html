@@ -5,12 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Exam Simulator</title>
 <meta name="color-scheme" content="light dark" />
-<meta name="theme-color" content="#f5f7fa" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#12161c" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#eef0f7" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#0b0d18" media="(prefers-color-scheme: dark)" />
+<!-- Design system v2.0: the look, copied from chen97/todo by tools/sync-look.sh.
+     tokens.css loads first, the app's own CSS (bundled by Vite into <head>)
+     next, and glass.css last, from the top of <body>, so it lands after the
+     bundle in dev and in a build alike. -->
+<link rel="stylesheet" href="./look/tokens.css" vite-ignore />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 </head>
 <body>
+<link rel="stylesheet" href="./look/glass.css" vite-ignore />
 <script>
 // design-system v1.2, tokens.md § type scaling: "Read it before first paint;
 // a flash of default-size type on every load is worse than not shipping the
