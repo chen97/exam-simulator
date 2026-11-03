@@ -672,7 +672,7 @@ function PaletteDrawer({ open, onClose, examQuestions, responses, flagged, curre
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
-              <div className="filter-chips">
+              <div className="filter-chips segmented">
                 {[
                   ["all", "All"],
                   ["unanswered", "Unanswered"],
