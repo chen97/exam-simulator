@@ -1,4 +1,4 @@
-/* ---- Design system v2.0 (CHE-1439). ----
+/* ---- Design system v2.0. ----
    The tokens and the glass layer are chen97/todo's public/tokens.css and
    public/glass.css, copied verbatim into public/look/ by tools/sync-look.sh
    and linked from index.html: tokens.css before this file, glass.css after
@@ -1031,7 +1031,7 @@ button { font-family: inherit; cursor: pointer; }
      --ac, the indigo --grad-soft is made of, on the progress track, --in.
      Solid, not the gradient: the arc is the only thing that says how far the
      swipe has gone, and --grad-soft's deep end (--ac-fill) is under 3:1 on
-     the dark page, while --ac clears it on every bed (CHE-1439). */
+     the dark page, while --ac clears it on every bed. */
   background:
     conic-gradient(
       from -90deg,

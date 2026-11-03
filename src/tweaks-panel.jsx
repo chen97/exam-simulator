@@ -130,7 +130,7 @@ const __TWEAKS_STYLE = `
   .twk-seg button[aria-checked="true"]{color:var(--tx)}
 
   /* Same switch as .switch in styles.css: --mut off track, --ac on,
-     --panel knob — measured in the v2.0 PR (CHE-1439). */
+     --panel knob — measured in the v2.0 PR. */
   .twk-toggle{position:relative;width:32px;height:18px;border:0;border-radius:var(--r-full);
     background:var(--mut);transition:background var(--d-fast) var(--ease-out);cursor:default;padding:0}
   .twk-toggle[data-on="1"]{background:var(--ac)}
