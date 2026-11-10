@@ -26,6 +26,12 @@ html[data-density="spacious"] {
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
+/* iOS Safari inflates text it judges too small for the page ("text
+   autosizing"), and it does when a long URL makes the exam page wider than
+   the phone: options and explanations come out bigger than the question.
+   Sizes come from the --t-* tokens and the text-size setting, never from
+   the browser's guess. Pinch zoom is untouched. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   font-family: var(--f-sans);
   font-size: var(--t-base);
@@ -537,6 +543,10 @@ button { font-family: inherit; cursor: pointer; }
   }
   .exam-container { max-width: 1120px; }
 }
+
+/* Long words and URLs (an explanation's "Source: https://…") break inside
+   the card instead of widening the page. */
+.start-wrap, .exam-main, .results-wrap { overflow-wrap: anywhere; }
 
 /* Wrapper for the AnimatePresence slide between questions; positions
    the exiting card so it doesn't push layout while sliding out. */
@@ -1285,7 +1295,9 @@ html[data-theme="dark"] .search-input {
 
 /* Small screens — side click-zones give way to bottom nav row */
 @media (max-width: 980px) {
-  .exam-layout { grid-template-columns: 1fr; }
+  /* minmax(0, …): a bare 1fr can't go narrower than its widest word, so one
+     long URL made the whole column, and the page, wider than a phone. */
+  .exam-layout { grid-template-columns: minmax(0, 1fr); }
   .exam-main { grid-column: 1; padding-left: 24px; padding-right: 24px; }
   .side-zone { display: none; }
   .nav-row { display: flex; }
